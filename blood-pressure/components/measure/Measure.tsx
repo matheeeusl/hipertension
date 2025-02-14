@@ -16,15 +16,15 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 // Esquema de validação com Zod
-const registroSchema = z.object({
+const MeasureSchema = z.object({
   pressao_sistolica: z.string().regex(/^\d+$/, 'A pressão sistólica deve conter apenas números').min(2, 'A pressão sistólica deve ter no mínimo 2 dígitos').max(3, 'A pressão sistólica deve ter no máximo 3 dígitos'),
   pressao_diastolica: z.string().regex(/^\d+$/, 'A pressão diastólica deve conter apenas números').min(2, 'A pressão diastólica deve ter no mínimo 2 dígitos').max(3, 'A pressão diastólica deve ter no máximo 3 dígitos'),
   anotacoes: z.string().optional(),
 });
 
-type RegistroFormData = z.infer<typeof registroSchema>;
+type MeasureFormData = z.infer<typeof MeasureSchema>;
 
-export const Registro = () => {
+export const Measure = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -32,16 +32,16 @@ export const Registro = () => {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<RegistroFormData>({
-    resolver: zodResolver(registroSchema),
+  } = useForm<MeasureFormData>({
+    resolver: zodResolver(MeasureSchema),
   });
 
-  const onSubmit: SubmitHandler<RegistroFormData> = async (data) => {
+  const onSubmit: SubmitHandler<MeasureFormData> = async (data) => {
     setError(null);
     setSuccess(null);
 
     try {
-      const { error } = await supabase.from('registros').insert([
+      const { error } = await supabase.from('Measures').insert([
         {
           ...data,
           data_hora: new Date(),
@@ -53,7 +53,7 @@ export const Registro = () => {
         throw error;
       }
 
-      setSuccess('Registro salvo com sucesso!');
+      setSuccess('Measure salvo com sucesso!');
     } catch (error: unknown) {
       setError((error as Error).message);
     }
@@ -101,7 +101,7 @@ export const Registro = () => {
             {success && <p className="text-green-500">{success}</p>}
           </div>
           <CardFooter className="mt-4">
-            <Button type="submit">Salvar Registro</Button>
+            <Button type="submit">Salvar Measure</Button>
           </CardFooter>
         </form>
       </CardContent>
