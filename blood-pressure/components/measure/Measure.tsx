@@ -41,11 +41,11 @@ export const Measure = () => {
     setSuccess(null);
 
     try {
-      const { error } = await supabase.from('Measures').insert([
+      const { error } = await supabase.from('registros').insert([
         {
           ...data,
           data_hora: new Date(),
-          usuario_id: 'id do usuário logado', // Substitua pelo ID do usuário logado
+          usuario_id: '828f3131-98b2-4ca5-aef3-478b7abb2b3e', // Substitua pelo ID do usuário logado
         },
       ]);
 
@@ -66,7 +66,7 @@ export const Measure = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="grid gap-4">
+          <div className="flex gap-4">
             <div>
               <Label htmlFor="pressao_sistolica">Pressão Sistólica</Label>
               <Input
@@ -100,7 +100,7 @@ export const Measure = () => {
             {error && <p className="text-red-500">{error}</p>}
             {success && <p className="text-green-500">{success}</p>}
           </div>
-          <CardFooter className="mt-4">
+          <CardFooter className="mt-4 p-0">
             <Button type="submit">Salvar Measure</Button>
           </CardFooter>
         </form>
