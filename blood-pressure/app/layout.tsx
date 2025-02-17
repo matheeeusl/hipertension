@@ -1,6 +1,9 @@
-import type { Metadata } from "next";
+"use client"
+
+import { Provider } from 'react-redux';
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import store from './store';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -12,10 +15,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Blood Pressure | Home",
-  description: "Laureano",
-};
+// export const metadata: Metadata = {
+//   title: "Blood Pressure | Home",
+//   description: "Laureano",
+// };
 
 export default function RootLayout({
   children,
@@ -27,7 +30,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <Provider store={store}>
+          {children}
+        </Provider>
       </body>
     </html>
   );
