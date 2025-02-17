@@ -3,8 +3,9 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Registro } from "@/interfaces/Registro";
 import { useRegistros } from "@/queries/registro";
+import { format } from "date-fns";
 
-const userId = '828f3131-98b2-4ca5-aef3-478b7abb2b3e';
+const userId = process.env.NEXT_PUBLIC_USER_ID || '';
 
 export const History = () => {
   const { data, error, isLoading } = useRegistros(userId)
@@ -15,6 +16,7 @@ export const History = () => {
         <TableHead>Pressão Sistólica</TableHead>
         <TableHead>Pressão Diastólica</TableHead>
         <TableHead>Data</TableHead>
+        <TableHead>Anotações</TableHead>
       </TableRow>
     </TableHeader>
     <TableBody>
@@ -34,7 +36,8 @@ export const History = () => {
             <TableRow key={registro.id}>
               <TableCell>{registro.pressao_sistolica}</TableCell>
               <TableCell>{registro.pressao_diastolica}</TableCell>
-              <TableCell>{new Date(registro.data_hora).toLocaleDateString()}</TableCell>
+              <TableCell>{format(registro.data_hora, 'dd/MM/yyyy, HH:mm')}</TableCell>
+              <TableCell>{registro.anotacoes}</TableCell>
             </TableRow>
           ))}
     </TableBody>

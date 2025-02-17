@@ -1,9 +1,8 @@
-"use client"
-
-import { Provider } from 'react-redux';
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import store from './store';
+
+import { Metadata } from 'next';
+import Wrapper from "@/components/wrapper/wrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,10 +14,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// export const metadata: Metadata = {
-//   title: "Blood Pressure | Home",
-//   description: "Laureano",
-// };
+export const metadata: Metadata = {
+  title: "Blood Pressure | Home",
+  description: "Laureano",
+};
 
 export default function RootLayout({
   children,
@@ -30,9 +29,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Provider store={store}>
+        <Wrapper>
           {children}
-        </Provider>
+        </Wrapper>
       </body>
     </html>
   );

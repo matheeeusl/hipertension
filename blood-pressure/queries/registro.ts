@@ -10,6 +10,7 @@ export const useRegistros = (userId: string) => {
       await addRegistro({ registro, userId }).unwrap();
     } catch (error) {
       console.error(error);
+      throw new Error('Erro ao adicionar registro');
     }
   }
 
