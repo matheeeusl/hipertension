@@ -41,6 +41,9 @@ export const NavMenu = () => {
       <Link href="/measure" className={linkClass("/measure")}>
         {t.nav.record}
       </Link>
+      <Link href="/weight" className={linkClass("/weight")}>
+        {t.nav.weight}
+      </Link>
       <div className="ml-auto flex items-center gap-3">
         <span className="text-sm text-gray-400">{user.email}</span>
         <ThemeSwitch />

@@ -9,7 +9,9 @@ import {
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { useBloodPressure } from "@/hooks/useBloodPressure";
+import { useWeight } from "@/hooks/useWeight";
 import { transformBloodPressureData } from "@/utils/chart";
+import { transformWeightData } from "@/utils/weightChart";
 import { useState, useMemo } from "react";
 import { BloodPressure, BloodPressureChartData } from "@/interfaces/BloodPressure";
 import { useLocale } from "@/contexts/LocaleContext";
@@ -18,6 +20,14 @@ import { ErrorAlert } from "@/components/shared/ErrorAlert";
 import { FilterButtonGroup } from "@/components/shared/FilterButtonGroup";
 
 type FilterPeriod = "3days" | "1week" | "1month" | "3months" | "all";
+
+type MergedChartData = {
+  date: string;
+  datetime: string;
+  systolic?: number;
+  diastolic?: number;
+  weight?: number;
+};
 
 const chartConfig = {
   systolic: {
@@ -28,10 +38,14 @@ const chartConfig = {
     label: "Diastolic",
     color: "rgb(255, 99, 132)",
   },
+  weight: {
+    label: "Weight",
+    color: "rgb(34, 197, 94)",
+  },
 } satisfies ChartConfig;
 
 const filterDataByPeriod = (
-  data: BloodPressureChartData[],
+  data: MergedChartData[],
   period: FilterPeriod,
 ) => {
   if (period === "all" || data.length === 0) return data;
@@ -40,21 +54,37 @@ const filterDataByPeriod = (
   cutoffDate.setHours(0, 0, 0, 0);
 
   switch (period) {
-    case "3days":
-      cutoffDate.setDate(cutoffDate.getDate() - 2);
-      break;
-    case "1week":
-      cutoffDate.setDate(cutoffDate.getDate() - 7);
-      break;
-    case "1month":
-      cutoffDate.setMonth(cutoffDate.getMonth() - 1);
-      break;
-    case "3months":
-      cutoffDate.setMonth(cutoffDate.getMonth() - 3);
-      break;
+    case "3days": cutoffDate.setDate(cutoffDate.getDate() - 2); break;
+    case "1week": cutoffDate.setDate(cutoffDate.getDate() - 7); break;
+    case "1month": cutoffDate.setMonth(cutoffDate.getMonth() - 1); break;
+    case "3months": cutoffDate.setMonth(cutoffDate.getMonth() - 3); break;
   }
 
   return data.filter((item) => new Date(item.datetime) >= cutoffDate);
+};
+
+const mergeChartData = (
+  bpData: BloodPressureChartData[],
+  weightPoints: { date: string; datetime: string; weight: number }[]
+): MergedChartData[] => {
+  const map = new Map<string, MergedChartData>();
+
+  for (const bp of bpData) {
+    map.set(bp.datetime, { date: bp.date, datetime: bp.datetime, systolic: bp.systolic, diastolic: bp.diastolic });
+  }
+
+  for (const w of weightPoints) {
+    const existing = map.get(w.datetime);
+    if (existing) {
+      existing.weight = w.weight;
+    } else {
+      map.set(w.datetime, { date: w.date, datetime: w.datetime, weight: w.weight });
+    }
+  }
+
+  return [...map.values()].sort(
+    (a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime()
+  );
 };
 
 interface GraphProps {
@@ -64,8 +94,13 @@ interface GraphProps {
 
 export const Graph = ({ userId, readings: propReadings }: GraphProps) => {
   const { t } = useLocale();
-  const { data: fetchedData, error, isLoading } = useBloodPressure(userId ?? "");
-  const data = propReadings ?? fetchedData;
+  const { data: fetchedBpData, error: bpError, isLoading: bpLoading } = useBloodPressure(userId ?? "");
+  const { data: weightData, isLoading: weightLoading } = useWeight(userId ?? "");
+
+  const bpData = propReadings ?? fetchedBpData;
+  const isAuthenticated = !!userId && !propReadings;
+  const hasWeight = isAuthenticated && weightData.length > 0;
+
   const [selectedPeriod, setSelectedPeriod] = useState<FilterPeriod>("1week");
 
   const filterOptions = useMemo(
@@ -77,9 +112,11 @@ export const Graph = ({ userId, readings: propReadings }: GraphProps) => {
   );
 
   const chartData = useMemo(() => {
-    const transformed = transformBloodPressureData(data);
-    return filterDataByPeriod(transformed, selectedPeriod);
-  }, [data, selectedPeriod]);
+    const bpPoints = transformBloodPressureData(bpData);
+    const wPoints = isAuthenticated ? transformWeightData(weightData) : [];
+    const merged = mergeChartData(bpPoints, wPoints);
+    return filterDataByPeriod(merged, selectedPeriod);
+  }, [bpData, weightData, isAuthenticated, selectedPeriod]);
 
   const xAxisInterval = useMemo(() => {
     if (chartData.length <= 7) return 0;
@@ -88,10 +125,12 @@ export const Graph = ({ userId, readings: propReadings }: GraphProps) => {
     return Math.floor(chartData.length / 10);
   }, [chartData.length]);
 
-  if (!propReadings && isLoading) return <LoadingSpinner text={t.graph.loadingText} size="sm" />;
-  if (!propReadings && error) return <ErrorAlert message={t.graph.loadError} />;
+  const isLoading = !propReadings && (bpLoading || (isAuthenticated && weightLoading));
 
-  if (data.length === 0) {
+  if (isLoading) return <LoadingSpinner text={t.graph.loadingText} size="sm" />;
+  if (!propReadings && bpError) return <ErrorAlert message={t.graph.loadError} />;
+
+  if (bpData.length === 0) {
     return <p className="text-sm text-gray-500">{t.graph.noMeasurements}</p>;
   }
 
@@ -121,7 +160,7 @@ export const Graph = ({ userId, readings: propReadings }: GraphProps) => {
             <LineChart
               accessibilityLayer
               data={chartData}
-              margin={{ top: 30, right: 20, left: 20, bottom: 60 }}
+              margin={{ top: 30, right: hasWeight ? 50 : 20, left: 20, bottom: 60 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
@@ -136,10 +175,20 @@ export const Graph = ({ userId, readings: propReadings }: GraphProps) => {
                 interval={xAxisInterval}
               />
               <YAxis
+                yAxisId="bp"
                 domain={["dataMin - 10", "dataMax + 10"]}
                 tick={{ fontSize: 12 }}
                 label={{ value: "mmHg", angle: -90, position: "insideLeft" }}
               />
+              {hasWeight && (
+                <YAxis
+                  yAxisId="weight"
+                  orientation="right"
+                  domain={["dataMin - 2", "dataMax + 2"]}
+                  tick={{ fontSize: 12 }}
+                  label={{ value: "kg", angle: 90, position: "insideRight" }}
+                />
+              )}
               <ChartTooltip
                 cursor={true}
                 content={
@@ -150,6 +199,7 @@ export const Graph = ({ userId, readings: propReadings }: GraphProps) => {
                 }
               />
               <Line
+                yAxisId="bp"
                 dataKey="systolic"
                 type="monotone"
                 stroke={chartConfig.systolic.color}
@@ -159,6 +209,7 @@ export const Graph = ({ userId, readings: propReadings }: GraphProps) => {
                 connectNulls={false}
               />
               <Line
+                yAxisId="bp"
                 dataKey="diastolic"
                 type="monotone"
                 stroke={chartConfig.diastolic.color}
@@ -167,6 +218,18 @@ export const Graph = ({ userId, readings: propReadings }: GraphProps) => {
                 activeDot={{ r: 6, stroke: chartConfig.diastolic.color, strokeWidth: 2 }}
                 connectNulls={false}
               />
+              {hasWeight && (
+                <Line
+                  yAxisId="weight"
+                  dataKey="weight"
+                  type="monotone"
+                  stroke={chartConfig.weight.color}
+                  strokeWidth={2}
+                  dot={{ fill: chartConfig.weight.color, strokeWidth: 2, r: 4 }}
+                  activeDot={{ r: 6, stroke: chartConfig.weight.color, strokeWidth: 2 }}
+                  connectNulls={false}
+                />
+              )}
             </LineChart>
           </ChartContainer>
         )}
