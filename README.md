@@ -1,6 +1,6 @@
 # Blood Pressure Tracker
 
-A full-stack web application for tracking and visualizing blood pressure readings over time.
+A full-stack web application for tracking and visualizing blood pressure and weight readings over time.
 
 ## Tech Stack
 
@@ -18,23 +18,27 @@ A full-stack web application for tracking and visualizing blood pressure reading
 
 - Email/password authentication with sign up and sign in
 - Record systolic/diastolic readings with optional notes (max 240 characters)
+- Record weight readings (kg) with optional notes — authenticated users only
 - Interactive line chart with period filters (3 days, 1 week, 1 month, 3 months, all)
+- Combined BP + weight chart for logged-in users with dual Y-axis (mmHg / kg) and show/hide weight toggle
 - History table with column sorting (systolic, diastolic, category, date) and period filter
+- Weight history table with column sorting (weight, date) and period filter
 - Click any table row to open a detail modal with the full notes content
-- Full CRUD operations (create, read, delete)
+- Full CRUD operations for both blood pressure and weight readings
 - BP category classification based on 2017 ACC/AHA guidelines
 - Toast notifications for feedback
-- Guest mode: readings stored in session storage (not persisted to database)
+- Guest mode: BP readings stored in session storage (not persisted to database)
 - View toggle (table / chart) visible only when readings exist
 - Dark mode and language (EN / PT-BR) switchers
 - Dynamic page titles per route
 
 ## Routes
 
-| Route      | Access | Description                                                                    |
-| ---------- | ------ | ------------------------------------------------------------------------------ |
-| `/`        | Public | Login / sign up                                                                |
-| `/measure` | Public | Record readings — guests use session storage, logged-in users use the database |
+| Route      | Access        | Description                                                                    |
+| ---------- | ------------- | ------------------------------------------------------------------------------ |
+| `/`        | Public        | Login / sign up                                                                |
+| `/measure` | Public        | Record BP readings — guests use session storage, logged-in users use database  |
+| `/weight`  | Authenticated | Record and view weight readings                                                 |
 
 ## Getting Started
 
@@ -45,7 +49,7 @@ A full-stack web application for tracking and visualizing blood pressure reading
 
 ### Supabase Setup
 
-**1. Create the table**
+**1. Create the tables**
 
 ```sql
 create table blood_pressure_readings (
@@ -59,26 +63,40 @@ create table blood_pressure_readings (
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+create table weight_readings (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  weight numeric(5,2) not null,
+  notes text,
+  recorded_at timestamptz default now(),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
 ```
 
 **2. Enable Row Level Security**
 
 ```sql
-ALTER TABLE blood_pressure_readings ENABLE ROW LEVEL SECURITY;
+alter table blood_pressure_readings enable row level security;
 
-CREATE POLICY "Users can manage their own readings"
-ON blood_pressure_readings
-FOR ALL
-TO authenticated
-USING (auth.uid()::text = user_id)
-WITH CHECK (auth.uid()::text = user_id);
+create policy "Users can manage their own readings"
+on blood_pressure_readings for all to authenticated
+using (auth.uid()::text = user_id)
+with check (auth.uid()::text = user_id);
+
+alter table weight_readings enable row level security;
+
+create policy "Users can manage their own weight readings"
+on weight_readings for all to authenticated
+using (auth.uid()::text = user_id)
+with check (auth.uid()::text = user_id);
 ```
 
 With RLS enabled:
 
 - Direct access via **anon key without a session** → blocked
 - Access via **authenticated Supabase session** → allowed for own data only
-- Access via **Next.js API routes** (service role key) → always allowed, bypasses RLS
 
 **3. Enable Email Auth**
 
@@ -89,7 +107,7 @@ To skip email confirmation during development, disable **Confirm email** in the 
 ### Installation
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### Environment Variables
@@ -106,7 +124,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>      # Settings > API > anon / pub
 ### Running Locally
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
@@ -121,7 +139,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Deployment
 
-The app is a fully static export (`next export`) deployed to GitHub Pages via GitHub Actions.
+The app is a fully static export (`output: "export"`) deployed to GitHub Pages via GitHub Actions.
 
 Every push to `main` triggers the workflow at `.github/workflows/deploy.yml`, which builds and publishes to:
 
@@ -147,34 +165,43 @@ Go to **Settings → Pages** → Source: **GitHub Actions**.
 ```
 app/
   page.tsx              # Login / sign up
-  measure/              # Record readings (public)
-api/                    # RTK Query API definitions
+  measure/              # Record BP readings (public)
+  weight/               # Record and view weight readings (auth only)
+api/                    # RTK Query API definitions (bloodPressureApi, weightApi)
 components/
   auth/                 # LoginForm
-  graph/                # Line chart with period filters
-  history/              # History table with sort and period filter
+  graph/                # Combined BP + weight chart with period filters
+  history/              # BP history table with sort and period filter
   measure/              # Measure form + local readings list + view toggle
   nav/                  # NavMenu, ThemeSwitch, LocaleSwitch
   shared/               # Reusable components (LoadingSpinner, ErrorAlert, etc.)
   ui/                   # UI primitives (shadcn/ui)
+  weight/               # WeightForm, WeightHistory, WeightGraph, WeightReadingsView
   wrapper/              # Redux Provider wrapper
 hooks/
   useAuth.ts            # Supabase Auth state
-  useBloodPressure.ts   # API CRUD hook
+  useBloodPressure.ts   # BP API CRUD hook
+  useWeight.ts          # Weight API CRUD hook
   useLocalReadings.ts   # Session storage hook (guest mode)
-interfaces/             # TypeScript interfaces
+interfaces/             # TypeScript interfaces (BloodPressure, Weight)
 locales/                # EN and PT-BR translation strings
-store/                  # Redux store
+store/                  # Redux store (bloodPressureApi + weightApi)
 utils/
   supabaseClientBrowser.ts  # Browser Supabase client (anon key + RLS)
   bpCategory.ts             # BP category classification
-  chart.ts                  # Data transformation utilities
+  chart.ts                  # BP data transformation utilities
+  weightChart.ts            # Weight data transformation utilities
 ```
 
 ## Validation Rules
 
+**Blood Pressure**
 - **Systolic**: 70–300 mmHg
 - **Diastolic**: 40–200 mmHg
+- **Notes**: optional, max 240 characters
+
+**Weight**
+- **Weight**: 20–300 kg (decimals accepted, e.g. 70.5)
 - **Notes**: optional, max 240 characters
 
 ## BP Categories (ACC/AHA 2017)
