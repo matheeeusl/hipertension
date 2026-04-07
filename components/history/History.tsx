@@ -106,7 +106,7 @@ export const History = ({ userId }: { userId: string }) => {
 
   const processedData = useMemo(() => {
     const cutoff = getPeriodCutoff(period);
-    let result = cutoff
+    const result = cutoff
       ? data.filter((r) => new Date(r.recorded_at) >= cutoff)
       : [...data];
 
