@@ -56,6 +56,8 @@ export const en = {
     loadingText: "Loading chart...",
     loadError: "Failed to load readings.",
     dateLabel: "Date",
+    showWeight: "Show Weight",
+    hideWeight: "Hide Weight",
   },
   history: {
     title: "Blood Pressure History",
@@ -142,7 +144,7 @@ export const en = {
     },
   },
   nav: {
-    record: "Record",
+    record: "Record BP",
     history: "History",
     weight: "Weight",
     signOut: "Sign Out",

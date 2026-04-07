@@ -57,6 +57,8 @@ export const ptBR: Translations = {
     loadingText: "Carregando gráfico...",
     loadError: "Falha ao carregar medições.",
     dateLabel: "Data",
+    showWeight: "Mostrar Peso",
+    hideWeight: "Ocultar Peso",
   },
   history: {
     title: "Histórico de Pressão Arterial",
@@ -120,8 +122,10 @@ export const ptBR: Translations = {
     historyTitle: "Histórico de Peso",
     reading: "medição",
     readings: "medições",
-    noReadings: "Nenhuma medição encontrada. Comece aferindo seu primeiro peso!",
-    noReadingsForPeriod: "Nenhuma medição encontrada para o período selecionado.",
+    noReadings:
+      "Nenhuma medição encontrada. Comece aferindo seu primeiro peso!",
+    noReadingsForPeriod:
+      "Nenhuma medição encontrada para o período selecionado.",
     columns: {
       weight: "Peso",
       dateTime: "Data e Hora",
@@ -144,7 +148,7 @@ export const ptBR: Translations = {
     },
   },
   nav: {
-    record: "Aferir",
+    record: "Aferir Pressão",
     history: "Histórico",
     weight: "Peso",
     signOut: "Sair",

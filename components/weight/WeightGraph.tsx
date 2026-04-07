@@ -4,7 +4,10 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import {
-  ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent,
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
 } from "@/components/ui/chart";
 import { useWeight } from "@/hooks/useWeight";
 import { transformWeightData } from "@/utils/weightChart";
@@ -40,8 +43,11 @@ export const WeightGraph = ({ userId }: { userId: string }) => {
   const [selectedPeriod, setSelectedPeriod] = useState<FilterPeriod>("1week");
 
   const filterOptions = useMemo(
-    () => (Object.entries(t.graph.filters) as [FilterPeriod, string][]).map(([value, label]) => ({ value, label })),
-    [t.graph.filters]
+    () =>
+      (Object.entries(t.graph.filters) as [FilterPeriod, string][]).map(
+        ([value, label]) => ({ value, label }),
+      ),
+    [t.graph.filters],
   );
 
   const chartData = useMemo(() => {
@@ -58,19 +64,26 @@ export const WeightGraph = ({ userId }: { userId: string }) => {
 
   if (isLoading) return <LoadingSpinner text={t.graph.loadingText} size="sm" />;
   if (error) return <ErrorAlert message={t.graph.loadError} />;
-  if (rawData.length === 0) return <p className="text-sm text-gray-500">{t.graph.noMeasurements}</p>;
+  if (rawData.length === 0)
+    return <p className="text-sm text-gray-500">{t.graph.noMeasurements}</p>;
 
   return (
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">{t.weight.graphTitle}</h3>
-          <FilterButtonGroup options={filterOptions} selected={selectedPeriod} onSelect={setSelectedPeriod} />
+          <FilterButtonGroup
+            options={filterOptions}
+            selected={selectedPeriod}
+            onSelect={setSelectedPeriod}
+          />
         </div>
         {chartData.length > 0 && (
           <p className="text-sm text-gray-600">
             {t.graph.showing} {chartData.length}{" "}
-            {chartData.length !== 1 ? t.graph.measurements : t.graph.measurement}
+            {chartData.length !== 1
+              ? t.graph.measurements
+              : t.graph.measurement}
           </p>
         )}
       </CardHeader>
@@ -116,8 +129,12 @@ export const WeightGraph = ({ userId }: { userId: string }) => {
                 stroke={chartConfig.weight.color}
                 strokeWidth={2}
                 dot={{ fill: chartConfig.weight.color, strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, stroke: chartConfig.weight.color, strokeWidth: 2 }}
-                connectNulls={false}
+                activeDot={{
+                  r: 6,
+                  stroke: chartConfig.weight.color,
+                  strokeWidth: 2,
+                }}
+                connectNulls={true}
               />
             </LineChart>
           </ChartContainer>
