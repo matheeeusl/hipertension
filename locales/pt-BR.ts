@@ -113,6 +113,7 @@ export const ptBR: Translations = {
   weight: {
     title: "Aferir Peso",
     weightLabel: "Peso (kg)",
+    recordedAtLabel: "Horário da Medição (opcional)",
     notesLabel: "Observações (opcional)",
     notesPlaceholder: "ex.: pela manhã, após refeição...",
     saveButton: "Salvar",

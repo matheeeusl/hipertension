@@ -15,7 +15,13 @@ import { useLocale } from "@/contexts/LocaleContext";
 
 type WeightFormData = {
   weight: string;
+  recordedAt?: string;
   notes?: string;
+};
+
+const toLocalDatetimeValue = (date: Date) => {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
 export const WeightForm = ({ userId }: { userId: string }) => {
@@ -33,6 +39,7 @@ export const WeightForm = ({ userId }: { userId: string }) => {
             const n = parseFloat(val);
             return n >= 20 && n <= 300;
           }, t.weight.validation.weightRange),
+        recordedAt: z.string().optional(),
         notes: z.string().max(240, t.weight.validation.notesMax).optional(),
       }),
     [t]
@@ -59,7 +66,10 @@ export const WeightForm = ({ userId }: { userId: string }) => {
 
   const onSubmit: SubmitHandler<WeightFormData> = async (data) => {
     try {
-      await addReading({ weight: parseFloat(data.weight), notes: data.notes });
+      const recorded_at = data.recordedAt
+        ? new Date(data.recordedAt).toISOString()
+        : new Date().toISOString();
+      await addReading({ weight: parseFloat(data.weight), notes: data.notes, recorded_at });
       toast.success(t.weight.successMessage);
       reset();
     } catch (error: unknown) {
@@ -75,19 +85,31 @@ export const WeightForm = ({ userId }: { userId: string }) => {
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4">
-            <div className="max-w-44">
-              <Label htmlFor="weight">{t.weight.weightLabel}</Label>
-              <Input
-                type="number"
-                id="weight"
-                step="0.1"
-                placeholder="70.5"
-                className={cn("w-full", errors.weight && "border-red-500")}
-                {...register("weight")}
-              />
-              {errors.weight && (
-                <p className="text-red-500 text-xs mt-1">{errors.weight.message}</p>
-              )}
+            <div className="flex flex-wrap gap-4">
+              <div className="w-32">
+                <Label htmlFor="weight">{t.weight.weightLabel}</Label>
+                <Input
+                  type="number"
+                  id="weight"
+                  step="0.1"
+                  placeholder="70.5"
+                  className={cn("w-full", errors.weight && "border-red-500")}
+                  {...register("weight")}
+                />
+                {errors.weight && (
+                  <p className="text-red-500 text-xs mt-1">{errors.weight.message}</p>
+                )}
+              </div>
+              <div className="flex-1 min-w-48">
+                <Label htmlFor="recordedAt">{t.weight.recordedAtLabel}</Label>
+                <Input
+                  type="datetime-local"
+                  id="recordedAt"
+                  max={toLocalDatetimeValue(new Date())}
+                  className="w-full"
+                  {...register("recordedAt")}
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="notes">{t.weight.notesLabel}</Label>

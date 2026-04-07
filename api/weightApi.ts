@@ -27,7 +27,7 @@ export const weightApi = createApi({
             weight: reading.weight,
             notes: reading.notes ?? null,
             user_id: userId,
-            recorded_at: new Date().toISOString(),
+            recorded_at: reading.recorded_at ?? new Date().toISOString(),
           }])
           .select()
           .single();

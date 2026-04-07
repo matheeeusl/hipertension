@@ -11,6 +11,7 @@ export interface Weight {
 export interface WeightInput {
   weight: number;
   notes?: string;
+  recorded_at?: string;
 }
 
 export interface WeightChartData {

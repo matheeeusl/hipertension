@@ -111,6 +111,7 @@ export const en = {
   weight: {
     title: "Record Weight",
     weightLabel: "Weight (kg)",
+    recordedAtLabel: "Measurement Time (optional)",
     notesLabel: "Notes (optional)",
     notesPlaceholder: "e.g., morning, after meal...",
     saveButton: "Save",
