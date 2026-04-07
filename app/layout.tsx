@@ -1,9 +1,10 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-import { Metadata } from 'next';
+import { Metadata } from "next";
 import Wrapper from "@/components/wrapper/wrapper";
 import { NavMenu } from "@/components/nav/NavMenu";
+import { Footer } from "@/components/shared/Footer";
 import { Toaster } from "sonner";
 
 const geistSans = Geist({
@@ -17,7 +18,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Blood Pressure | Home",
+  title: {
+    default: "Blood Pressure",
+    template: "Blood Pressure | %s",
+  },
   description: "Laureano",
 };
 
@@ -34,6 +38,7 @@ export default function RootLayout({
         <Wrapper>
           <NavMenu />
           {children}
+          <Footer />
           <Toaster richColors />
         </Wrapper>
       </body>

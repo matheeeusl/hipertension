@@ -55,7 +55,7 @@ export const Measure = ({ userId, onSave }: MeasureProps) => {
             (val) => { const n = parseInt(val, 10); return n >= 40 && n <= 200; },
             t.measure.validation.diastolicRange
           ),
-        notes: z.string().optional(),
+        notes: z.string().max(240, t.measure.validation.notesMax).optional(),
       }),
     [t]
   );
@@ -147,9 +147,14 @@ export const Measure = ({ userId, onSave }: MeasureProps) => {
               <Input
                 type="text"
                 id="notes"
+                maxLength={240}
                 placeholder={t.measure.notesPlaceholder}
+                className={cn(errors.notes && "border-red-500")}
                 {...register("notes")}
               />
+              {errors.notes && (
+                <p className="text-red-500 text-xs mt-1">{errors.notes.message}</p>
+              )}
             </div>
           </div>
           <CardFooter className="mt-4 p-0">

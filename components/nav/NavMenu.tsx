@@ -29,6 +29,9 @@ export const NavMenu = () => {
       <div className="flex justify-end items-center gap-2 px-6 py-3 border-b bg-background">
         <ThemeSwitch />
         <LocaleSwitch />
+        <Link href="/" className="text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors">
+          {t.auth.signIn}
+        </Link>
       </div>
     );
   }
@@ -37,9 +40,6 @@ export const NavMenu = () => {
     <nav className="flex items-center gap-6 px-6 py-3 border-b bg-background">
       <Link href="/measure" className={linkClass("/measure")}>
         {t.nav.record}
-      </Link>
-      <Link href="/history" className={linkClass("/history")}>
-        {t.nav.history}
       </Link>
       <div className="ml-auto flex items-center gap-3">
         <span className="text-sm text-gray-400">{user.email}</span>

@@ -1,21 +1,18 @@
 "use client";
 
-import { format } from "date-fns";
-import { Trash2 } from "lucide-react";
 import Link from "next/link";
 import { BloodPressure } from "@/interfaces/BloodPressure";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { useLocale } from "@/contexts/LocaleContext";
-import { getBPCategory } from "@/utils/bpCategory";
+import { BPCitationFooter } from "@/components/shared/BPCitationFooter";
+import { ReadingTableRow } from "@/components/shared/ReadingTableRow";
 
 interface Props {
   readings: BloodPressure[];
@@ -55,53 +52,18 @@ export const LocalReadingsList = ({ readings, onDelete }: Props) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {readings.map((reading) => {
-              const category = getBPCategory(
-                reading.systolic_pressure,
-                reading.diastolic_pressure,
-                t.history.categories
-              );
-              return (
-                <TableRow key={reading.id}>
-                  <TableCell className="font-medium">{reading.systolic_pressure}</TableCell>
-                  <TableCell className="font-medium">{reading.diastolic_pressure}</TableCell>
-                  <TableCell>
-                    <span className={`text-sm ${category.color}`}>{category.text}</span>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {format(new Date(reading.recorded_at), "HH:mm")}
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-600 max-w-[200px] truncate">
-                    {reading.notes || "-"}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDelete(reading.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {readings.map((reading) => (
+              <ReadingTableRow
+                key={reading.id}
+                reading={reading}
+                categories={t.history.categories}
+                dateFormat="HH:mm"
+                onDelete={onDelete}
+              />
+            ))}
           </TableBody>
         </Table>
-        <p className="text-xs text-gray-400 mt-2 px-1">
-          * Whelton PK, et al. 2017 ACC/AHA Guideline for the Prevention,
-          Detection, Evaluation, and Management of High Blood Pressure in
-          Adults. <em>J Am Coll Cardiol.</em> 2018;71(19):e127–e248.{" "}
-          <a
-            href="https://doi.org/10.1016/j.jacc.2017.11.006"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-gray-600"
-          >
-            doi:10.1016/j.jacc.2017.11.006
-          </a>
-        </p>
+        <BPCitationFooter className="px-1" />
       </CardContent>
     </Card>
   );

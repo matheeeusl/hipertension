@@ -36,6 +36,7 @@ export const en = {
       diastolicMin: "Diastolic pressure must have at least 2 digits",
       diastolicMax: "Diastolic pressure must have at most 3 digits",
       diastolicRange: "Diastolic pressure must be between 40 and 200",
+      notesMax: "Notes must be at most 240 characters",
     },
   },
   graph: {
@@ -62,6 +63,7 @@ export const en = {
     readings: "readings",
     noReadings:
       "No readings found. Start by recording your first blood pressure measurement!",
+    noReadingsForPeriod: "No readings found for the selected period.",
     columns: {
       systolic: "Systolic",
       diastolic: "Diastolic",

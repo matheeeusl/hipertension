@@ -13,6 +13,9 @@ import { transformBloodPressureData } from "@/utils/chart";
 import { useState, useMemo } from "react";
 import { BloodPressure, BloodPressureChartData } from "@/interfaces/BloodPressure";
 import { useLocale } from "@/contexts/LocaleContext";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+import { ErrorAlert } from "@/components/shared/ErrorAlert";
+import { FilterButtonGroup } from "@/components/shared/FilterButtonGroup";
 
 type FilterPeriod = "3days" | "1week" | "1month" | "3months" | "all";
 
@@ -85,22 +88,8 @@ export const Graph = ({ userId, readings: propReadings }: GraphProps) => {
     return Math.floor(chartData.length / 10);
   }, [chartData.length]);
 
-  if (!propReadings && isLoading) {
-    return (
-      <div className="flex justify-center items-center p-8 gap-2">
-        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-900" />
-        <span className="text-sm text-gray-500">{t.graph.loadingText}</span>
-      </div>
-    );
-  }
-
-  if (!propReadings && error) {
-    return (
-      <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-        <p className="text-sm text-red-700">{t.graph.loadError}</p>
-      </div>
-    );
-  }
+  if (!propReadings && isLoading) return <LoadingSpinner text={t.graph.loadingText} size="sm" />;
+  if (!propReadings && error) return <ErrorAlert message={t.graph.loadError} />;
 
   if (data.length === 0) {
     return <p className="text-sm text-gray-500">{t.graph.noMeasurements}</p>;
@@ -111,21 +100,11 @@ export const Graph = ({ userId, readings: propReadings }: GraphProps) => {
       <CardHeader>
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold">{t.graph.title}</h3>
-          <div className="flex gap-2">
-            {filterOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setSelectedPeriod(option.value)}
-                className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                  selectedPeriod === option.value
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
+          <FilterButtonGroup
+            options={filterOptions}
+            selected={selectedPeriod}
+            onSelect={setSelectedPeriod}
+          />
         </div>
         {chartData.length > 0 && (
           <p className="text-sm text-gray-600">

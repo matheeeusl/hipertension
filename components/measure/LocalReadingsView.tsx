@@ -6,6 +6,7 @@ import { BloodPressure } from "@/interfaces/BloodPressure";
 import { Graph } from "@/components/graph/Graph";
 import { LocalReadingsList } from "@/components/measure/LocalReadingsList";
 import { History } from "@/components/history/History";
+import { useBloodPressure } from "@/hooks/useBloodPressure";
 
 interface AuthenticatedProps {
   userId: string;
@@ -23,33 +24,38 @@ type Props = AuthenticatedProps | AnonymousProps;
 
 export const LocalReadingsView = ({ userId, readings, onDelete }: Props) => {
   const [view, setView] = useState<"graph" | "table">("table");
+  const { data: authData } = useBloodPressure(userId ?? "");
+
+  const hasRecords = userId ? authData.length > 0 : (readings?.length ?? 0) > 0;
 
   return (
     <div className="w-full space-y-3">
-      <div className="flex justify-end">
-        <div className="inline-flex rounded-md border bg-muted p-1 gap-1">
-          <button
-            onClick={() => setView("graph")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm transition-colors ${
-              view === "graph"
-                ? "bg-background shadow-sm text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <BarChart2 size={14} />
-          </button>
-          <button
-            onClick={() => setView("table")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm transition-colors ${
-              view === "table"
-                ? "bg-background shadow-sm text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Table2 size={14} />
-          </button>
+      {hasRecords && (
+        <div className="flex">
+          <div className="inline-flex rounded-md border bg-muted p-1 gap-1">
+            <button
+              onClick={() => setView("graph")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm transition-colors ${
+                view === "graph"
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <BarChart2 size={14} />
+            </button>
+            <button
+              onClick={() => setView("table")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm transition-colors ${
+                view === "table"
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Table2 size={14} />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {view === "graph" ? (
         userId ? (

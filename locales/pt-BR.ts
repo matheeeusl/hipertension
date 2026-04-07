@@ -37,6 +37,7 @@ export const ptBR: Translations = {
       diastolicMin: "A pressão diastólica deve ter pelo menos 2 dígitos",
       diastolicMax: "A pressão diastólica deve ter no máximo 3 dígitos",
       diastolicRange: "A pressão diastólica deve estar entre 40 e 200",
+      notesMax: "As observações devem ter no máximo 240 caracteres",
     },
   },
   graph: {
@@ -63,6 +64,7 @@ export const ptBR: Translations = {
     readings: "medições",
     noReadings:
       "Nenhuma medição encontrada. Comece registrando sua primeira medição de pressão arterial!",
+    noReadingsForPeriod: "Nenhuma medição encontrada para o período selecionado.",
     columns: {
       systolic: "Sistólica",
       diastolic: "Diastólica",

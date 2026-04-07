@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
-
-const PAGE_SIZE = 10;
+import { ChevronsUpDown, ChevronUp, ChevronDown } from "lucide-react";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -22,24 +20,128 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Trash2 } from "lucide-react";
 import { BloodPressure } from "@/interfaces/BloodPressure";
 import { useBloodPressure } from "@/hooks/useBloodPressure";
-import { format } from "date-fns";
 import { toast } from "sonner";
 import { useLocale } from "@/contexts/LocaleContext";
 import { getBPCategory } from "@/utils/bpCategory";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
+import { ErrorAlert } from "@/components/shared/ErrorAlert";
+import { BPCitationFooter } from "@/components/shared/BPCitationFooter";
+import { ReadingTableRow } from "@/components/shared/ReadingTableRow";
+import { FilterButtonGroup } from "@/components/shared/FilterButtonGroup";
+
+const PAGE_SIZE = 10;
+
+type SortColumn = "systolic" | "diastolic" | "category" | "date";
+type SortDirection = "asc" | "desc";
+type FilterPeriod = "3days" | "1week" | "1month" | "3months" | "all";
+
+const getPeriodCutoff = (period: FilterPeriod): Date | null => {
+  if (period === "all") return null;
+  const cutoff = new Date();
+  cutoff.setHours(0, 0, 0, 0);
+  if (period === "3days") cutoff.setDate(cutoff.getDate() - 2);
+  if (period === "1week") cutoff.setDate(cutoff.getDate() - 7);
+  if (period === "1month") cutoff.setMonth(cutoff.getMonth() - 1);
+  if (period === "3months") cutoff.setMonth(cutoff.getMonth() - 3);
+  return cutoff;
+};
+
+interface SortableHeadProps {
+  column: SortColumn;
+  label: string;
+  sortColumn: SortColumn | null;
+  sortDirection: SortDirection;
+  onSort: (col: SortColumn) => void;
+}
+
+const SortableHead = ({ column, label, sortColumn, sortDirection, onSort }: SortableHeadProps) => {
+  const isActive = sortColumn === column;
+  const Icon = isActive
+    ? sortDirection === "asc" ? ChevronUp : ChevronDown
+    : ChevronsUpDown;
+
+  return (
+    <TableHead
+      className="cursor-pointer select-none whitespace-nowrap"
+      onClick={() => onSort(column)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <Icon size={14} className={isActive ? "text-foreground" : "text-muted-foreground"} />
+      </span>
+    </TableHead>
+  );
+};
 
 export const History = ({ userId }: { userId: string }) => {
   const { data, error, isLoading, deleteReading } = useBloodPressure(userId);
   const { t } = useLocale();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [period, setPeriod] = useState<FilterPeriod>("all");
 
-  const totalPages = useMemo(() => Math.max(1, Math.ceil(data.length / PAGE_SIZE)), [data.length]);
+  const filterOptions = useMemo(
+    () => (Object.entries(t.graph.filters) as [FilterPeriod, string][]).map(([value, label]) => ({ value, label })),
+    [t.graph.filters]
+  );
+
+  const handleSort = (col: SortColumn) => {
+    if (sortColumn === col) {
+      setSortDirection((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortColumn(col);
+      setSortDirection("asc");
+    }
+    setPage(1);
+  };
+
+  const handlePeriodChange = (p: FilterPeriod) => {
+    setPeriod(p);
+    setPage(1);
+  };
+
+  const processedData = useMemo(() => {
+    const cutoff = getPeriodCutoff(period);
+    let result = cutoff
+      ? data.filter((r) => new Date(r.recorded_at) >= cutoff)
+      : [...data];
+
+    if (sortColumn) {
+      result.sort((a, b) => {
+        let aVal: string | number;
+        let bVal: string | number;
+
+        if (sortColumn === "systolic") {
+          aVal = a.systolic_pressure;
+          bVal = b.systolic_pressure;
+        } else if (sortColumn === "diastolic") {
+          aVal = a.diastolic_pressure;
+          bVal = b.diastolic_pressure;
+        } else if (sortColumn === "date") {
+          aVal = new Date(a.recorded_at).getTime();
+          bVal = new Date(b.recorded_at).getTime();
+        } else {
+          aVal = getBPCategory(a.systolic_pressure, a.diastolic_pressure, t.history.categories).text;
+          bVal = getBPCategory(b.systolic_pressure, b.diastolic_pressure, t.history.categories).text;
+        }
+
+        if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+        if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [data, period, sortColumn, sortDirection, t.history.categories]);
+
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(processedData.length / PAGE_SIZE)), [processedData.length]);
   const paginatedData = useMemo(
-    () => data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
-    [data, page]
+    () => processedData.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [processedData, page]
   );
 
   const handleDeleteConfirm = async () => {
@@ -55,91 +157,52 @@ export const History = ({ userId }: { userId: string }) => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-        <span className="ml-2">{t.history.loading}</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-4 bg-red-50 border border-red-200 rounded-md">
-        <p className="text-red-800">{t.history.loadError}</p>
-      </div>
-    );
-  }
+  if (isLoading) return <LoadingSpinner text={t.history.loading} />;
+  if (error) return <ErrorAlert message={t.history.loadError} />;
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-2">
         <h3 className="text-lg font-semibold">{t.history.title}</h3>
-        <span className="text-sm text-gray-500">
-          {data.length}{" "}
-          {data.length !== 1 ? t.history.readings : t.history.reading}
-        </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <FilterButtonGroup
+            options={filterOptions}
+            selected={period}
+            onSelect={handlePeriodChange}
+          />
+          <span className="text-sm text-gray-500">
+            {processedData.length}{" "}
+            {processedData.length !== 1 ? t.history.readings : t.history.reading}
+          </span>
+        </div>
       </div>
 
-      {data.length === 0 ? (
+      {processedData.length === 0 ? (
         <div className="text-center py-8 text-gray-500">
-          {t.history.noReadings}
+          {data.length === 0 ? t.history.noReadings : t.history.noReadingsForPeriod}
         </div>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t.history.columns.systolic}</TableHead>
-              <TableHead>{t.history.columns.diastolic}</TableHead>
-              <TableHead>{t.history.columns.category} *</TableHead>
-              <TableHead>{t.history.columns.dateTime}</TableHead>
+              <SortableHead column="systolic" label={t.history.columns.systolic} sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+              <SortableHead column="diastolic" label={t.history.columns.diastolic} sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+              <SortableHead column="category" label={`${t.history.columns.category} *`} sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
+              <SortableHead column="date" label={t.history.columns.dateTime} sortColumn={sortColumn} sortDirection={sortDirection} onSort={handleSort} />
               <TableHead>{t.history.columns.notes}</TableHead>
               <TableHead className="w-[50px]" />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedData.map((reading: BloodPressure) => {
-              const category = getBPCategory(
-                reading.systolic_pressure,
-                reading.diastolic_pressure,
-                t.history.categories,
-              );
-              return (
-                <TableRow key={reading.id}>
-                  <TableCell className="font-medium">
-                    {reading.systolic_pressure}
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {reading.diastolic_pressure}
-                  </TableCell>
-                  <TableCell>
-                    <span className={`text-sm ${category.color}`}>
-                      {category.text}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {format(
-                      new Date(reading.recorded_at),
-                      "MMM dd, yyyy HH:mm",
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-600 max-w-[200px] truncate">
-                    {reading.notes || "-"}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setPendingDeleteId(reading.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+            {paginatedData.map((reading: BloodPressure) => (
+              <ReadingTableRow
+                key={reading.id}
+                reading={reading}
+                categories={t.history.categories}
+                dateFormat="MMM dd, yyyy HH:mm"
+                onDelete={setPendingDeleteId}
+              />
+            ))}
           </TableBody>
         </Table>
       )}
@@ -168,21 +231,7 @@ export const History = ({ userId }: { userId: string }) => {
         </div>
       )}
 
-      {data.length > 0 && (
-        <p className="text-xs text-gray-400 mt-2">
-          * Whelton PK, et al. 2017 ACC/AHA Guideline for the Prevention,
-          Detection, Evaluation, and Management of High Blood Pressure in
-          Adults. <em>J Am Coll Cardiol.</em> 2018;71(19):e127–e248.{" "}
-          <a
-            href="https://doi.org/10.1016/j.jacc.2017.11.006"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-gray-600"
-          >
-            doi:10.1016/j.jacc.2017.11.006
-          </a>
-        </p>
-      )}
+      {data.length > 0 && <BPCitationFooter />}
 
       <AlertDialog
         open={!!pendingDeleteId}
