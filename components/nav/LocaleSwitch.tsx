@@ -7,7 +7,8 @@ export const LocaleSwitch = () => {
   const { locale, setLocale } = useLocale();
 
   const next = locale === "en" ? "pt-BR" : "en";
-  const flag = locale === "en" ? "/flags/br.svg" : "/flags/en.svg";
+  const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  const flag = locale === "en" ? `${base}/flags/br.svg` : `${base}/flags/en.svg`;
   const label = locale === "en" ? "Mudar para Português" : "Switch to English";
 
   return (

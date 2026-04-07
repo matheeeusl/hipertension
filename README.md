@@ -17,22 +17,24 @@ A full-stack web application for tracking and visualizing blood pressure reading
 ## Features
 
 - Email/password authentication with sign up and sign in
-- Record systolic/diastolic readings with optional notes
-- Interactive line chart with time period filters (3 days, 1 week, 1 month, 3 months, all)
-- Full CRUD operations (create, read, update, delete)
-- Trend analysis (increasing / stable / decreasing)
-- Average calculation over configurable periods
+- Record systolic/diastolic readings with optional notes (max 240 characters)
+- Interactive line chart with period filters (3 days, 1 week, 1 month, 3 months, all)
+- History table with column sorting (systolic, diastolic, category, date) and period filter
+- Click any table row to open a detail modal with the full notes content
+- Full CRUD operations (create, read, delete)
+- BP category classification based on 2017 ACC/AHA guidelines
 - Toast notifications for feedback
-- Guest mode: record readings stored in session (not persisted to database)
-- Navigation menu visible only to authenticated users
+- Guest mode: readings stored in session storage (not persisted to database)
+- View toggle (table / chart) visible only when readings exist
+- Dark mode and language (EN / PT-BR) switchers
+- Dynamic page titles per route
 
 ## Routes
 
-| Route      | Access    | Description                                                                    |
-| ---------- | --------- | ------------------------------------------------------------------------------ |
-| `/`        | Public    | Login / sign up                                                                |
-| `/measure` | Public    | Record readings — guests use session storage, logged-in users use the database |
-| `/history` | Protected | Full reading history with delete and BP category                               |
+| Route      | Access | Description                                                                    |
+| ---------- | ------ | ------------------------------------------------------------------------------ |
+| `/`        | Public | Login / sign up                                                                |
+| `/measure` | Public | Record readings — guests use session storage, logged-in users use the database |
 
 ## Getting Started
 
@@ -95,12 +97,11 @@ npm install
 Copy `.env.example` to `.env.local` and fill in your values:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>        # Settings > API > Project URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>       # Settings > API > anon / publishable
-SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>   # Settings > API > service_role / secret
+NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>       # Settings > API > Project URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>      # Settings > API > anon / publishable
 ```
 
-> `SUPABASE_SERVICE_ROLE_KEY` does **not** use the `NEXT_PUBLIC_` prefix — it stays server-side and is never exposed to the browser.
+> The app talks to Supabase directly from the browser using the anon key. Row Level Security (RLS) ensures each user can only access their own data. No server-side secret key is needed.
 
 ### Running Locally
 
@@ -112,12 +113,34 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Scripts
 
-| Command         | Description                     |
-| --------------- | ------------------------------- |
-| `npm run dev`   | Start dev server with Turbopack |
-| `npm run build` | Build for production            |
-| `npm run start` | Start production server         |
-| `npm run lint`  | Run ESLint                      |
+| Command          | Description                     |
+| ---------------- | ------------------------------- |
+| `pnpm dev`       | Start dev server with Turbopack |
+| `pnpm build`     | Build static export to `./out`  |
+| `pnpm lint`      | Run ESLint                      |
+
+## Deployment
+
+The app is a fully static export (`next export`) deployed to GitHub Pages via GitHub Actions.
+
+Every push to `main` triggers the workflow at `.github/workflows/deploy.yml`, which builds and publishes to:
+
+```
+https://matheeeusl.github.io/hipertension/
+```
+
+### Required GitHub Secrets
+
+Go to **Settings → Secrets and variables → Actions** and add:
+
+| Secret | Value |
+| ------ | ----- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon/public key |
+
+### Enable GitHub Pages
+
+Go to **Settings → Pages** → Source: **GitHub Actions**.
 
 ## Project Structure
 
@@ -125,40 +148,43 @@ Open [http://localhost:3000](http://localhost:3000).
 app/
   page.tsx              # Login / sign up
   measure/              # Record readings (public)
-  history/              # Reading history (protected)
 api/                    # RTK Query API definitions
 components/
   auth/                 # LoginForm
   graph/                # Line chart with period filters
-  history/              # History table
-  measure/              # Measure form + local readings list
-  nav/                  # NavMenu (authenticated users only)
-  ui/                   # Reusable UI primitives (shadcn/ui)
+  history/              # History table with sort and period filter
+  measure/              # Measure form + local readings list + view toggle
+  nav/                  # NavMenu, ThemeSwitch, LocaleSwitch
+  shared/               # Reusable components (LoadingSpinner, ErrorAlert, etc.)
+  ui/                   # UI primitives (shadcn/ui)
   wrapper/              # Redux Provider wrapper
 hooks/
   useAuth.ts            # Supabase Auth state
   useBloodPressure.ts   # API CRUD hook
   useLocalReadings.ts   # Session storage hook (guest mode)
 interfaces/             # TypeScript interfaces
-pages/api/              # Next.js API routes (server-side, uses service role)
-store/                  # Redux store and slices
+locales/                # EN and PT-BR translation strings
+store/                  # Redux store
 utils/
-  supabaseClient.ts         # Server-side Supabase client (service role)
-  supabaseClientBrowser.ts  # Browser Supabase client (anon key, auth only)
+  supabaseClientBrowser.ts  # Browser Supabase client (anon key + RLS)
+  bpCategory.ts             # BP category classification
   chart.ts                  # Data transformation utilities
 ```
-
-## API Endpoints
-
-| Method | Path                              | Description                   |
-| ------ | --------------------------------- | ----------------------------- |
-| GET    | `/api/blood-pressure/:userId`     | Fetch all readings for a user |
-| POST   | `/api/blood-pressure/:userId`     | Create a new reading          |
-| PUT    | `/api/blood-pressure/:userId/:id` | Update a reading              |
-| DELETE | `/api/blood-pressure/:userId/:id` | Delete a reading              |
 
 ## Validation Rules
 
 - **Systolic**: 70–300 mmHg
 - **Diastolic**: 40–200 mmHg
-- Both fields are required; notes are optional
+- **Notes**: optional, max 240 characters
+
+## BP Categories (ACC/AHA 2017)
+
+| Category      | Systolic      | Diastolic    |
+| ------------- | ------------- | ------------ |
+| Low (Severe)  | < 80          | < 50         |
+| Low           | < 90          | < 60         |
+| Normal        | < 120         | < 80         |
+| Elevated      | 120–129       | < 80         |
+| Stage 1       | 130–139       | 80–89        |
+| Stage 2       | ≥ 140         | ≥ 90         |
+| Crisis        | ≥ 180         | ≥ 120        |
