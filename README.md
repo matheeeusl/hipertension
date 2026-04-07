@@ -28,11 +28,11 @@ A full-stack web application for tracking and visualizing blood pressure reading
 
 ## Routes
 
-| Route | Access | Description |
-|-------|--------|-------------|
-| `/` | Public | Login / sign up |
-| `/measure` | Public | Record readings — guests use session storage, logged-in users use the database |
-| `/history` | Protected | Full reading history with delete and BP category |
+| Route      | Access    | Description                                                                    |
+| ---------- | --------- | ------------------------------------------------------------------------------ |
+| `/`        | Public    | Login / sign up                                                                |
+| `/measure` | Public    | Record readings — guests use session storage, logged-in users use the database |
+| `/history` | Protected | Full reading history with delete and BP category                               |
 
 ## Getting Started
 
@@ -73,6 +73,7 @@ WITH CHECK (auth.uid()::text = user_id);
 ```
 
 With RLS enabled:
+
 - Direct access via **anon key without a session** → blocked
 - Access via **authenticated Supabase session** → allowed for own data only
 - Access via **Next.js API routes** (service role key) → always allowed, bypasses RLS
@@ -111,12 +112,12 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start dev server with Turbopack |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
+| Command         | Description                     |
+| --------------- | ------------------------------- |
+| `npm run dev`   | Start dev server with Turbopack |
+| `npm run build` | Build for production            |
+| `npm run start` | Start production server         |
+| `npm run lint`  | Run ESLint                      |
 
 ## Project Structure
 
@@ -149,15 +150,15 @@ utils/
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/blood-pressure/:userId` | Fetch all readings for a user |
-| POST | `/api/blood-pressure/:userId` | Create a new reading |
-| PUT | `/api/blood-pressure/:userId/:id` | Update a reading |
-| DELETE | `/api/blood-pressure/:userId/:id` | Delete a reading |
+| Method | Path                              | Description                   |
+| ------ | --------------------------------- | ----------------------------- |
+| GET    | `/api/blood-pressure/:userId`     | Fetch all readings for a user |
+| POST   | `/api/blood-pressure/:userId`     | Create a new reading          |
+| PUT    | `/api/blood-pressure/:userId/:id` | Update a reading              |
+| DELETE | `/api/blood-pressure/:userId/:id` | Delete a reading              |
 
 ## Validation Rules
 
-- **Systolic**: 50–300 mmHg
-- **Diastolic**: 30–200 mmHg
+- **Systolic**: 70–300 mmHg
+- **Diastolic**: 40–200 mmHg
 - Both fields are required; notes are optional
