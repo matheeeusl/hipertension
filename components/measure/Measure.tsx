@@ -1,6 +1,7 @@
 "use client";
 
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useMemo, useEffect, useCallback } from "react";
+import { useForm, SubmitHandler, Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -13,65 +14,89 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useBloodPressure } from "@/hooks/useBloodPressure";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useIsMounted } from "@/hooks/useIsMounted";
+import { useLocale } from "@/contexts/LocaleContext";
+import { BloodPressureInput } from "@/interfaces/BloodPressure";
 
-const MeasureSchema = z.object({
-  systolic_pressure: z
-    .string()
-    .regex(/^\d+$/, "Systolic pressure must contain only numbers")
-    .min(2, "Systolic pressure must have at least 2 digits")
-    .max(3, "Systolic pressure must have at most 3 digits")
-    .refine((val) => {
-      const num = parseInt(val, 10);
-      return num >= 70 && num <= 300;
-    }, "Systolic pressure must be between 70 and 300"),
-  diastolic_pressure: z
-    .string()
-    .regex(/^\d+$/, "Diastolic pressure must contain only numbers")
-    .min(2, "Diastolic pressure must have at least 2 digits")
-    .max(3, "Diastolic pressure must have at most 3 digits")
-    .refine((val) => {
-      const num = parseInt(val, 10);
-      return num >= 40 && num <= 200;
-    }, "Diastolic pressure must be between 40 and 200"),
-  notes: z.string().optional(),
-});
+type MeasureFormData = {
+  systolic_pressure: string;
+  diastolic_pressure: string;
+  notes?: string;
+};
 
-type MeasureFormData = z.infer<typeof MeasureSchema>;
+interface MeasureProps {
+  userId?: string;
+  onSave?: (reading: BloodPressureInput) => Promise<void>;
+}
 
-const userId = process.env.NEXT_PUBLIC_USER_ID || "";
+export const Measure = ({ userId, onSave }: MeasureProps) => {
+  const { t } = useLocale();
+  const { addReading, isAdding } = useBloodPressure(userId || "");
 
-export const Measure = () => {
-  const isMounted = useIsMounted();
+  const MeasureSchema = useMemo(
+    () =>
+      z.object({
+        systolic_pressure: z
+          .string()
+          .regex(/^\d+$/, t.measure.validation.systolicNumbers)
+          .min(2, t.measure.validation.systolicMin)
+          .max(3, t.measure.validation.systolicMax)
+          .refine(
+            (val) => { const n = parseInt(val, 10); return n >= 70 && n <= 300; },
+            t.measure.validation.systolicRange
+          ),
+        diastolic_pressure: z
+          .string()
+          .regex(/^\d+$/, t.measure.validation.diastolicNumbers)
+          .min(2, t.measure.validation.diastolicMin)
+          .max(3, t.measure.validation.diastolicMax)
+          .refine(
+            (val) => { const n = parseInt(val, 10); return n >= 40 && n <= 200; },
+            t.measure.validation.diastolicRange
+          ),
+        notes: z.string().optional(),
+      }),
+    [t]
+  );
 
-  const { addReading, isAdding } = useBloodPressure(userId);
+  const resolver: Resolver<MeasureFormData> = useCallback(
+    (values, context, options) =>
+      zodResolver(MeasureSchema)(values, context, options),
+    [MeasureSchema]
+  );
 
   const {
     register,
     handleSubmit,
     reset,
+    trigger,
     formState: { errors },
-  } = useForm<MeasureFormData>({
-    resolver: zodResolver(MeasureSchema),
-  });
+  } = useForm<MeasureFormData>({ resolver });
 
-  if (!isMounted) return null; // Prevent hydration mismatch
+  useEffect(() => {
+    const fieldsWithErrors = Object.keys(errors) as Array<keyof MeasureFormData>;
+    if (fieldsWithErrors.length) trigger(fieldsWithErrors);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t]);
 
   const onSubmit: SubmitHandler<MeasureFormData> = async (data) => {
-    const reading = {
+    const reading: BloodPressureInput = {
       systolic_pressure: parseInt(data.systolic_pressure, 10),
       diastolic_pressure: parseInt(data.diastolic_pressure, 10),
       notes: data.notes,
     };
 
     try {
-      await addReading(reading);
-      toast.success("Blood pressure reading saved successfully!");
-      reset(); // Clear form after successful submission
+      if (onSave) {
+        await onSave(reading);
+      } else {
+        await addReading(reading);
+      }
+      toast.success(t.measure.successMessage);
+      reset();
     } catch (error: unknown) {
-      toast.error("Failed to save reading", {
+      toast.error(t.measure.errorMessage, {
         description: (error as Error).message,
       });
     }
@@ -80,24 +105,19 @@ export const Measure = () => {
   return (
     <Card>
       <CardHeader>
-        <h3 className="text-lg font-semibold">Record Blood Pressure</h3>
+        <h3 className="text-lg font-semibold">{t.measure.title}</h3>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div>
             <div className="flex gap-4">
               <div className="max-w-44 mb-4">
-                <Label htmlFor="systolic_pressure">
-                  Systolic Pressure (Upper)
-                </Label>
+                <Label htmlFor="systolic_pressure">{t.measure.systolicLabel}</Label>
                 <Input
                   type="number"
                   id="systolic_pressure"
                   placeholder="120"
-                  className={cn(
-                    "w-100",
-                    errors.systolic_pressure && "border-red-500"
-                  )}
+                  className={cn("w-full", errors.systolic_pressure && "border-red-500")}
                   {...register("systolic_pressure")}
                 />
                 {errors.systolic_pressure && (
@@ -107,17 +127,12 @@ export const Measure = () => {
                 )}
               </div>
               <div className="max-w-44 mb-4">
-                <Label htmlFor="diastolic_pressure">
-                  Diastolic Pressure (Lower)
-                </Label>
+                <Label htmlFor="diastolic_pressure">{t.measure.diastolicLabel}</Label>
                 <Input
                   type="number"
                   id="diastolic_pressure"
                   placeholder="80"
-                  className={cn(
-                    "w-100",
-                    errors.diastolic_pressure && "border-red-500"
-                  )}
+                  className={cn("w-full", errors.diastolic_pressure && "border-red-500")}
                   {...register("diastolic_pressure")}
                 />
                 {errors.diastolic_pressure && (
@@ -128,19 +143,18 @@ export const Measure = () => {
               </div>
             </div>
             <div>
-              <Label htmlFor="notes">Notes (optional)</Label>
+              <Label htmlFor="notes">{t.measure.notesLabel}</Label>
               <Input
                 type="text"
                 id="notes"
-                placeholder="e.g., after exercise, morning reading..."
+                placeholder={t.measure.notesPlaceholder}
                 {...register("notes")}
               />
             </div>
-            <Toaster richColors />
           </div>
           <CardFooter className="mt-4 p-0">
             <Button type="submit" disabled={isAdding}>
-              {isAdding ? "Saving..." : "Save Reading"}
+              {isAdding ? t.measure.savingButton : t.measure.saveButton}
             </Button>
           </CardFooter>
         </form>

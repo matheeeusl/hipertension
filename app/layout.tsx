@@ -3,6 +3,8 @@ import "./globals.css";
 
 import { Metadata } from 'next';
 import Wrapper from "@/components/wrapper/wrapper";
+import { NavMenu } from "@/components/nav/NavMenu";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,12 +27,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Wrapper>
+          <NavMenu />
           {children}
+          <Toaster richColors />
         </Wrapper>
       </body>
     </html>

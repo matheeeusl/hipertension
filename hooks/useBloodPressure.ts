@@ -7,7 +7,7 @@ import {
 import { BloodPressureInput } from "@/interfaces/BloodPressure";
 
 export const useBloodPressure = (userId: string) => {
-  const { data, isLoading, error } = useGetBloodPressureReadingsQuery(userId);
+  const { data, isLoading, error } = useGetBloodPressureReadingsQuery(userId, { skip: !userId });
   const [addReading, { isLoading: isAdding }] =
     useAddBloodPressureReadingMutation();
   const [updateReading, { isLoading: isUpdating }] =

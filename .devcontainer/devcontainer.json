@@ -1,0 +1,51 @@
+{
+  "name": "Hipertension — AI Jail",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+
+  "remoteEnv": {
+    "NODE_ENV": "development"
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bradlc.vscode-tailwindcss",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "vitest.explorer",
+        "eamodio.gitlens",
+        "usernamehw.errorlens",
+        "christian-kohler.path-intellisense"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "files.eol": "\n"
+      }
+    }
+  },
+
+  // Inicializar firewall ao criar o container (precisa de privileged)
+  "initializeCommand": "echo 'Building AI Jail container...'",
+  "postCreateCommand": "bash /usr/local/bin/init-firewall.sh || echo 'Firewall requires --privileged or --cap-add NET_ADMIN'",
+  "postStartCommand": "claude --version && echo '✅ Claude Code ready inside AI Jail'",
+
+  "runArgs": [
+    "--cap-add=NET_ADMIN"
+  ],
+  "mounts": [
+    "source=claude-credentials,target=/home/node/.claude,type=volume"
+  ],
+
+  "forwardPorts": [3000, 4321],
+   
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {}
+  }
+}
