@@ -91,7 +91,7 @@ export const WeightForm = ({ userId }: { userId: string }) => {
                 <Input
                   type="number"
                   id="weight"
-                  step="0.1"
+                  step="0.01"
                   placeholder="70.5"
                   className={cn("w-full", errors.weight && "border-red-500")}
                   {...register("weight")}

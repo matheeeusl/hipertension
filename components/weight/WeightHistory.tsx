@@ -155,7 +155,7 @@ export const WeightHistory = ({ userId }: { userId: string }) => {
           <TableBody>
             {paginatedData.map((reading: Weight) => (
               <TableRow key={reading.id} className="cursor-pointer" onClick={() => setSelectedReading(reading)}>
-                <TableCell className="font-medium">{reading.weight} kg</TableCell>
+                <TableCell className="font-medium">{reading.weight.toFixed(2)} kg</TableCell>
                 <TableCell className="text-sm">
                   {format(new Date(reading.recorded_at), "MMM dd, yyyy HH:mm")}
                 </TableCell>
@@ -196,7 +196,7 @@ export const WeightHistory = ({ userId }: { userId: string }) => {
       <Dialog open={!!selectedReading} onOpenChange={(open) => { if (!open) setSelectedReading(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{selectedReading?.weight} kg</DialogTitle>
+            <DialogTitle>{selectedReading?.weight.toFixed(2)} kg</DialogTitle>
             <DialogDescription asChild>
               <span className="text-sm text-muted-foreground">
                 {selectedReading && format(new Date(selectedReading.recorded_at), "MMM dd, yyyy HH:mm")}
