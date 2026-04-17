@@ -3,10 +3,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User } from "@supabase/supabase-js";
 import supabase from "@/utils/supabaseClientBrowser";
+import { toast } from "sonner";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  connectionError: string | null;
   signIn: (email: string, password: string) => Promise<User>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -15,6 +17,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  connectionError: null,
   signIn: async () => { throw new Error("AuthProvider not mounted"); },
   signUp: async () => { throw new Error("AuthProvider not mounted"); },
   signOut: async () => {},
@@ -23,18 +26,56 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let settled = false;
+
+    const showConnectionError = (message: string) => {
+      setConnectionError(message);
+      toast.error("Não foi possível conectar ao servidor. Verifique sua conexão.", {
+        duration: Infinity,
+        id: "supabase-connection-error",
+      });
+      setLoading(false);
+    };
+
+    const timeoutId = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        showConnectionError("Tempo limite de conexão excedido.");
+      }
+    }, 8000);
+
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+
+      if (error) {
+        showConnectionError(error.message);
+        return;
+      }
+
       setUser(session?.user ?? null);
       setLoading(false);
+    }).catch((err: unknown) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+
+      const message = err instanceof Error ? err.message : "Erro desconhecido";
+      showConnectionError(message);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
@@ -59,7 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, connectionError, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
