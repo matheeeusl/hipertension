@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function WeightPage() {
+export default function TemperaturePage() {
   redirect("/dashboard");
 }

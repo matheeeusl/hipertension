@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { ChevronsUpDown, ChevronUp, ChevronDown } from "lucide-react";
-import { format } from "date-fns";
+import { formatDate } from "@/utils/formatDate";
 import { Trash2 } from "lucide-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -21,7 +21,7 @@ import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { ErrorAlert } from "@/components/shared/ErrorAlert";
 import { FilterButtonGroup } from "@/components/shared/FilterButtonGroup";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 
 type SortColumn = "weight" | "date";
 type SortDirection = "asc" | "desc";
@@ -61,7 +61,7 @@ const SortableHead = ({ column, label, sortColumn, sortDirection, onSort }: Sort
 
 export const WeightHistory = ({ userId }: { userId: string }) => {
   const { data, error, isLoading, deleteReading } = useWeight(userId);
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [selectedReading, setSelectedReading] = useState<Weight | null>(null);
   const [page, setPage] = useState(1);
@@ -157,7 +157,7 @@ export const WeightHistory = ({ userId }: { userId: string }) => {
               <TableRow key={reading.id} className="cursor-pointer" onClick={() => setSelectedReading(reading)}>
                 <TableCell className="font-medium">{reading.weight.toFixed(2)} kg</TableCell>
                 <TableCell className="text-sm">
-                  {format(new Date(reading.recorded_at), "MMM dd, yyyy HH:mm")}
+                  {formatDate(reading.recorded_at, "MMM dd, yyyy HH:mm", locale)}
                 </TableCell>
                 <TableCell className="text-sm text-gray-600 max-w-[200px] truncate">
                   {reading.notes || "-"}
@@ -199,7 +199,7 @@ export const WeightHistory = ({ userId }: { userId: string }) => {
             <DialogTitle>{selectedReading?.weight.toFixed(2)} kg</DialogTitle>
             <DialogDescription asChild>
               <span className="text-sm text-muted-foreground">
-                {selectedReading && format(new Date(selectedReading.recorded_at), "MMM dd, yyyy HH:mm")}
+                {selectedReading && formatDate(selectedReading.recorded_at, "MMM dd, yyyy HH:mm", locale)}
               </span>
             </DialogDescription>
           </DialogHeader>

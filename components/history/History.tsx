@@ -31,7 +31,7 @@ import { BPCitationFooter } from "@/components/shared/BPCitationFooter";
 import { ReadingTableRow } from "@/components/shared/ReadingTableRow";
 import { FilterButtonGroup } from "@/components/shared/FilterButtonGroup";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 
 type SortColumn = "systolic" | "diastolic" | "category" | "date";
 type SortDirection = "asc" | "desc";
@@ -201,6 +201,7 @@ export const History = ({ userId }: { userId: string }) => {
                 categories={t.history.categories}
                 dateFormat="MMM dd, yyyy HH:mm"
                 onDelete={setPendingDeleteId}
+                userId={userId}
               />
             ))}
           </TableBody>

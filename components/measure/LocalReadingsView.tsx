@@ -1,73 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { BarChart2, Table2 } from "lucide-react";
 import { BloodPressure } from "@/interfaces/BloodPressure";
 import { Graph } from "@/components/graph/Graph";
 import { LocalReadingsList } from "@/components/measure/LocalReadingsList";
-import { History } from "@/components/history/History";
-import { useBloodPressure } from "@/hooks/useBloodPressure";
 
-interface AuthenticatedProps {
-  userId: string;
-  readings?: never;
-  onDelete?: never;
-}
-
-interface AnonymousProps {
-  userId?: never;
+interface Props {
   readings: BloodPressure[];
   onDelete: (id: string) => void;
 }
 
-type Props = AuthenticatedProps | AnonymousProps;
+const MAX_TABLE_ROWS = 5;
 
-export const LocalReadingsView = ({ userId, readings, onDelete }: Props) => {
-  const [view, setView] = useState<"graph" | "table">("table");
-  const { data: authData } = useBloodPressure(userId ?? "");
-
-  const hasRecords = userId ? authData.length > 0 : (readings?.length ?? 0) > 0;
+export const LocalReadingsView = ({ readings, onDelete }: Props) => {
+  if (readings.length === 0) return null;
 
   return (
-    <div className="w-full space-y-3">
-      {hasRecords && (
-        <div className="flex">
-          <div className="inline-flex rounded-md border bg-muted p-1 gap-1">
-            <button
-              onClick={() => setView("graph")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm transition-colors ${
-                view === "graph"
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <BarChart2 size={14} />
-            </button>
-            <button
-              onClick={() => setView("table")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm transition-colors ${
-                view === "table"
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Table2 size={14} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {view === "graph" ? (
-        userId ? (
-          <Graph userId={userId} />
-        ) : (
-          <Graph readings={readings} />
-        )
-      ) : userId ? (
-        <History userId={userId} />
-      ) : (
-        <LocalReadingsList readings={readings!} onDelete={onDelete!} />
-      )}
+    <div className="w-full space-y-4">
+      <Graph readings={readings} />
+      <LocalReadingsList
+        readings={readings.slice(0, MAX_TABLE_ROWS)}
+        onDelete={onDelete}
+      />
     </div>
   );
 };

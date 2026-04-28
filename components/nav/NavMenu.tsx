@@ -38,11 +38,8 @@ export const NavMenu = () => {
 
   return (
     <nav className="flex items-center gap-6 px-6 py-3 border-b bg-background">
-      <Link href="/measure" className={linkClass("/measure")}>
-        {t.nav.record}
-      </Link>
-      <Link href="/weight" className={linkClass("/weight")}>
-        {t.nav.weight}
+      <Link href="/dashboard" className={linkClass("/dashboard")}>
+        {t.nav.dashboard}
       </Link>
       <div className="ml-auto flex items-center gap-3">
         <span className="text-sm text-gray-400">{user.email}</span>
