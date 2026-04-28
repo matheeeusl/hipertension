@@ -1,6 +1,6 @@
-# Blood Pressure Tracker
+# Health Tracker
 
-A full-stack web application for tracking and visualizing blood pressure and weight readings over time.
+A full-stack web application for tracking and visualizing blood pressure, weight, and body temperature readings over time.
 
 ## Tech Stack
 
@@ -19,26 +19,26 @@ A full-stack web application for tracking and visualizing blood pressure and wei
 - Email/password authentication with sign up and sign in
 - Record systolic/diastolic readings with optional notes (max 240 characters)
 - Record weight readings (kg) with optional notes — authenticated users only
-- Interactive line chart with period filters (3 days, 1 week, 1 month, 3 months, all)
-- Combined BP + weight chart for logged-in users with dual Y-axis (mmHg / kg) and show/hide weight toggle
-- History table with column sorting (systolic, diastolic, category, date) and period filter
-- Weight history table with column sorting (weight, date) and period filter
-- Click any table row to open a detail modal with the full notes content
-- Full CRUD operations for both blood pressure and weight readings
+- Record body temperature readings (°C / °F) with optional notes — authenticated users only
+- Interactive combined chart (BP + weight + temperature) with period filters (3 days, 1 week, 1 month, 3 months, all)
+- Multi-axis chart with per-series show/hide toggles
+- History tables with column sorting and period filter — capped at 5 rows per page
+- Click any table row to open a detail modal; BP readings support inline editing from the modal
+- Full CRUD for blood pressure, weight, and temperature readings
 - BP category classification based on 2017 ACC/AHA guidelines
-- Toast notifications for feedback
-- Guest mode: BP readings stored in session storage (not persisted to database)
-- View toggle (table / chart) visible only when readings exist
-- Dark mode and language (EN / PT-BR) switchers
+- Temperature category classification (hypothermia → hyperthermia)
+- Toast notifications for all operations
+- Guest mode: BP readings stored in session storage, no database required
+- Dark mode and language (EN / PT-BR) switchers with locale-aware date formatting
 - Dynamic page titles per route
 
 ## Routes
 
-| Route      | Access        | Description                                                                    |
-| ---------- | ------------- | ------------------------------------------------------------------------------ |
-| `/`        | Public        | Login / sign up                                                                |
-| `/measure` | Public        | Record BP readings — guests use session storage, logged-in users use database  |
-| `/weight`  | Authenticated | Record and view weight readings                                                 |
+| Route        | Access        | Description                                                                  |
+| ------------ | ------------- | ---------------------------------------------------------------------------- |
+| `/`          | Public        | Login / sign up                                                              |
+| `/measure`   | Public        | Record BP readings — guests use session storage, logged-in users see chart   |
+| `/dashboard` | Authenticated | Tabbed hub: record BP / weight / temperature, combined chart, history tables |
 
 ## Getting Started
 
@@ -58,7 +58,6 @@ create table blood_pressure_readings (
   systolic_pressure integer not null,
   diastolic_pressure integer not null,
   notes text,
-  tags text[],
   recorded_at timestamptz default now(),
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -68,6 +67,16 @@ create table weight_readings (
   id uuid primary key default gen_random_uuid(),
   user_id text not null,
   weight numeric(5,2) not null,
+  notes text,
+  recorded_at timestamptz default now(),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table temperature_readings (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  temperature numeric(4,2) not null,
   notes text,
   recorded_at timestamptz default now(),
   created_at timestamptz default now(),
@@ -89,6 +98,13 @@ alter table weight_readings enable row level security;
 
 create policy "Users can manage their own weight readings"
 on weight_readings for all to authenticated
+using (auth.uid()::text = user_id)
+with check (auth.uid()::text = user_id);
+
+alter table temperature_readings enable row level security;
+
+create policy "Users can manage their own temperature readings"
+on temperature_readings for all to authenticated
 using (auth.uid()::text = user_id)
 with check (auth.uid()::text = user_id);
 ```
@@ -131,11 +147,11 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Scripts
 
-| Command          | Description                     |
-| ---------------- | ------------------------------- |
-| `pnpm dev`       | Start dev server with Turbopack |
-| `pnpm build`     | Build static export to `./out`  |
-| `pnpm lint`      | Run ESLint                      |
+| Command      | Description                     |
+| ------------ | ------------------------------- |
+| `pnpm dev`   | Start dev server with Turbopack |
+| `pnpm build` | Build static export to `./out`  |
+| `pnpm lint`  | Run ESLint                      |
 
 ## Deployment
 
@@ -151,9 +167,9 @@ https://matheeeusl.github.io/hipertension/
 
 Go to **Settings → Secrets and variables → Actions** and add:
 
-| Secret | Value |
-| ------ | ----- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
+| Secret                          | Value                         |
+| ------------------------------- | ----------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Your Supabase project URL     |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon/public key |
 
 ### Enable GitHub Pages
@@ -165,53 +181,83 @@ Go to **Settings → Pages** → Source: **GitHub Actions**.
 ```
 app/
   page.tsx              # Login / sign up
-  measure/              # Record BP readings (public)
-  weight/               # Record and view weight readings (auth only)
-api/                    # RTK Query API definitions (bloodPressureApi, weightApi)
+  measure/              # Record BP readings (public, guest-friendly)
+  dashboard/            # Authenticated hub: BP + weight + temperature tabs, combined chart
+  weight/               # Dedicated weight recording and history (auth only)
+  temperature/          # Dedicated temperature recording and history (auth only)
+api/
+  bloodPressureApi.ts   # RTK Query API (BP CRUD)
+  weightApi.ts          # RTK Query API (weight CRUD)
+  temperatureApi.ts     # RTK Query API (temperature CRUD)
 components/
   auth/                 # LoginForm
-  graph/                # Combined BP + weight chart with period filters
+  graph/                # Combined multi-series chart (Graph, MultiSeriesLineChart, ChartToggleButtons)
   history/              # BP history table with sort and period filter
-  measure/              # Measure form + local readings list + view toggle
+  measure/              # BP measure form + local readings list
   nav/                  # NavMenu, ThemeSwitch, LocaleSwitch
-  shared/               # Reusable components (LoadingSpinner, ErrorAlert, etc.)
+  shared/               # Reusable primitives (LoadingSpinner, ErrorAlert, SortableHead,
+  |                     #   HistoryPagination, DeleteConfirmDialog, ReadingTableRow, ReadingDialog, …)
+  temperature/          # TemperatureForm, TemperatureHistory, TemperatureTableRow, TemperatureGraph
   ui/                   # UI primitives (shadcn/ui)
-  weight/               # WeightForm, WeightHistory, WeightGraph, WeightReadingsView
+  weight/               # WeightForm, WeightHistory, WeightTableRow, WeightGraph
   wrapper/              # Redux Provider wrapper
 hooks/
   useAuth.ts            # Supabase Auth state
   useBloodPressure.ts   # BP API CRUD hook
   useWeight.ts          # Weight API CRUD hook
+  useTemperature.ts     # Temperature API CRUD hook
   useLocalReadings.ts   # Session storage hook (guest mode)
-interfaces/             # TypeScript interfaces (BloodPressure, Weight)
+interfaces/             # TypeScript interfaces (BloodPressure, Weight, Temperature)
 locales/                # EN and PT-BR translation strings
-store/                  # Redux store (bloodPressureApi + weightApi)
+store/                  # Redux store (all API slices)
 utils/
   supabaseClientBrowser.ts  # Browser Supabase client (anon key + RLS)
   bpCategory.ts             # BP category classification
-  chart.ts                  # BP data transformation utilities
-  weightChart.ts            # Weight data transformation utilities
+  temperatureCategory.ts    # Temperature category classification
+  chart.ts                  # BP data transformation
+  weightChart.ts            # Weight data transformation
+  temperatureChart.ts       # Temperature data transformation (includes °C ↔ °F conversion)
+  formatDate.ts             # Locale-aware date formatting (pt-BR: "28 de Abril de 2026")
 ```
 
 ## Validation Rules
 
 **Blood Pressure**
+
 - **Systolic**: 70–300 mmHg
 - **Diastolic**: 40–200 mmHg
 - **Notes**: optional, max 240 characters
 
 **Weight**
+
 - **Weight**: 20–300 kg (decimals accepted, e.g. 70.5)
+- **Notes**: optional, max 240 characters
+
+**Temperature**
+
+- **Temperature**: valid numeric value within physiological range
 - **Notes**: optional, max 240 characters
 
 ## BP Categories (ACC/AHA 2017)
 
-| Category      | Systolic      | Diastolic    |
-| ------------- | ------------- | ------------ |
-| Low (Severe)  | < 80          | < 50         |
-| Low           | < 90          | < 60         |
-| Normal        | < 120         | < 80         |
-| Elevated      | 120–129       | < 80         |
-| Stage 1       | 130–139       | 80–89        |
-| Stage 2       | ≥ 140         | ≥ 90         |
-| Crisis        | ≥ 180         | ≥ 120        |
+| Category     | Systolic | Diastolic |
+| ------------ | -------- | --------- |
+| Low (Severe) | < 80     | < 50      |
+| Low          | < 90     | < 60      |
+| Normal       | < 120    | < 80      |
+| Elevated     | 120–129  | < 80      |
+| Stage 1      | 130–139  | 80–89     |
+| Stage 2      | ≥ 140    | ≥ 90      |
+| Crisis       | ≥ 180    | ≥ 120     |
+
+## Temperature Categories
+
+| Category        | Range (°C)  |
+| --------------- | ----------- |
+| Hypothermia     | < 35.0      |
+| Below Normal    | 35.0 – 36.0 |
+| Normal          | 36.1 – 37.2 |
+| Low-grade Fever | 37.3 – 38.0 |
+| Fever           | 38.1 – 39.0 |
+| High Fever      | 39.1 – 40.0 |
+| Hyperthermia    | > 40.0      |
