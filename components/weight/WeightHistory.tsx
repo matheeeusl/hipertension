@@ -113,7 +113,7 @@ export const WeightHistory = ({ userId }: { userId: string }) => {
           </TableHeader>
           <TableBody>
             {paginatedData.map((reading: Weight) => (
-              <WeightTableRow key={reading.id} reading={reading} onDelete={setPendingDeleteId} />
+              <WeightTableRow key={reading.id} reading={reading} onDelete={setPendingDeleteId} userId={userId} />
             ))}
           </TableBody>
         </Table>

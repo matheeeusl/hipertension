@@ -155,6 +155,7 @@ export const TemperatureHistory = ({ userId }: { userId: string }) => {
                 unit={unit}
                 categories={t.temperature.categories}
                 onDelete={setPendingDeleteId}
+                userId={userId}
               />
             ))}
           </TableBody>
