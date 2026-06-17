@@ -2,10 +2,11 @@ import {
   BloodPressure,
   BloodPressureChartData,
 } from "@/interfaces/BloodPressure";
-import { format } from "date-fns";
+import { formatChartDate } from "./formatDate";
 
 export const transformBloodPressureData = (
-  readings: BloodPressure[]
+  readings: BloodPressure[],
+  locale?: string
 ): BloodPressureChartData[] => {
   if (!readings || readings.length === 0) return [];
 
@@ -13,9 +14,9 @@ export const transformBloodPressureData = (
     .toSorted(
       (a, b) =>
         new Date(a.recorded_at).getTime() - new Date(b.recorded_at).getTime()
-    ) // Sort chronologically for charts
+    )
     .map((reading) => ({
-      date: format(new Date(reading.recorded_at), "MM/dd HH:mm"),
+      date: formatChartDate(reading.recorded_at, locale),
       datetime: reading.recorded_at,
       systolic: reading.systolic_pressure,
       diastolic: reading.diastolic_pressure,

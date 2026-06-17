@@ -40,7 +40,7 @@ export const en = {
     },
   },
   graph: {
-    title: "Blood Pressure",
+    title: "Monitoring",
     filters: {
       "3days": "Last 3 Days",
       "1week": "Last Week",

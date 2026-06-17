@@ -18,12 +18,12 @@ export type MergedChartData = {
   temperature?: number;
 };
 
-export const chartConfig = {
-  systolic: { label: "Systolic", color: "rgb(54, 162, 235)" },
-  diastolic: { label: "Diastolic", color: "rgb(255, 99, 132)" },
-  weight: { label: "Weight", color: "rgb(34, 197, 94)" },
-  temperature: { label: "Temperature", color: "rgb(249, 115, 22)" },
-} satisfies ChartConfig;
+const chartColors = {
+  systolic: "rgb(54, 162, 235)",
+  diastolic: "rgb(255, 99, 132)",
+  weight: "rgb(34, 197, 94)",
+  temperature: "rgb(249, 115, 22)",
+};
 
 interface Props {
   chartData: MergedChartData[];
@@ -50,6 +50,13 @@ export const MultiSeriesLineChart = ({
   rightMargin,
 }: Props) => {
   const { t } = useLocale();
+
+  const chartConfig = {
+    systolic: { label: t.history.columns.systolic, color: chartColors.systolic },
+    diastolic: { label: t.history.columns.diastolic, color: chartColors.diastolic },
+    weight: { label: t.weight.columns.weight, color: chartColors.weight },
+    temperature: { label: t.temperature.columns.temperature, color: chartColors.temperature },
+  } satisfies ChartConfig;
 
   return (
     <ChartContainer config={chartConfig}>

@@ -10,7 +10,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { useTemperature } from "@/hooks/useTemperature";
-import { transformTemperatureData, celsiusToFahrenheit } from "@/utils/temperatureChart";
+import { transformTemperatureData, celsiusToFahrenheit } from "@/utils/measurementsChart";
 import { useLocale } from "@/contexts/LocaleContext";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { ErrorAlert } from "@/components/shared/ErrorAlert";

@@ -12,7 +12,7 @@ import { useTemperature } from "@/hooks/useTemperature";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useLocale } from "@/contexts/LocaleContext";
-import { fahrenheitToCelsius } from "@/utils/temperatureChart";
+import { fahrenheitToCelsius } from "@/utils/measurementsChart";
 
 type TempUnit = "C" | "F";
 

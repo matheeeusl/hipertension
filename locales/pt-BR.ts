@@ -41,7 +41,7 @@ export const ptBR: Translations = {
     },
   },
   graph: {
-    title: "Pressão Arterial",
+    title: "Monitoramento",
     filters: {
       "3days": "Últimos 3 Dias",
       "1week": "Última Semana",

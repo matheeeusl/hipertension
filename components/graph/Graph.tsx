@@ -6,8 +6,7 @@ import { useBloodPressure } from "@/hooks/useBloodPressure";
 import { useWeight } from "@/hooks/useWeight";
 import { useTemperature } from "@/hooks/useTemperature";
 import { transformBloodPressureData } from "@/utils/chart";
-import { transformWeightData } from "@/utils/weightChart";
-import { transformTemperatureData } from "@/utils/temperatureChart";
+import { transformWeightData, transformTemperatureData } from "@/utils/measurementsChart";
 import { BloodPressure, BloodPressureChartData } from "@/interfaces/BloodPressure";
 import { useLocale } from "@/contexts/LocaleContext";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
@@ -66,7 +65,7 @@ interface GraphProps {
 }
 
 export const Graph = ({ userId, readings: propReadings }: GraphProps) => {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const { data: fetchedBpData, error: bpError, isLoading: bpLoading } = useBloodPressure(userId ?? "");
   const { data: weightData, isLoading: weightLoading } = useWeight(userId ?? "");
   const { data: temperatureData, isLoading: temperatureLoading } = useTemperature(userId ?? "");
@@ -92,11 +91,11 @@ export const Graph = ({ userId, readings: propReadings }: GraphProps) => {
   );
 
   const chartData = useMemo(() => {
-    const bpPoints = transformBloodPressureData(bpData);
-    const wPoints = isAuthenticated ? transformWeightData(weightData) : [];
-    const tPoints = isAuthenticated ? transformTemperatureData(temperatureData) : [];
+    const bpPoints = transformBloodPressureData(bpData, locale);
+    const wPoints = isAuthenticated ? transformWeightData(weightData, locale) : [];
+    const tPoints = isAuthenticated ? transformTemperatureData(temperatureData, locale) : [];
     return filterDataByPeriod(mergeChartData(bpPoints, wPoints, tPoints), selectedPeriod);
-  }, [bpData, weightData, temperatureData, isAuthenticated, selectedPeriod]);
+  }, [bpData, weightData, temperatureData, isAuthenticated, selectedPeriod, locale]);
 
   const xAxisInterval = useMemo(() => {
     if (chartData.length <= 7) return 0;

@@ -20,7 +20,7 @@ import {
 import { useLocale } from "@/contexts/LocaleContext";
 import { formatDate } from "@/utils/formatDate";
 import { getTemperatureCategory } from "@/utils/temperatureCategory";
-import { celsiusToFahrenheit, fahrenheitToCelsius } from "@/utils/temperatureChart";
+import { celsiusToFahrenheit, fahrenheitToCelsius } from "@/utils/measurementsChart";
 import { useTemperature } from "@/hooks/useTemperature";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";

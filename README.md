@@ -215,9 +215,8 @@ utils/
   bpCategory.ts             # BP category classification
   temperatureCategory.ts    # Temperature category classification
   chart.ts                  # BP data transformation
-  weightChart.ts            # Weight data transformation
-  temperatureChart.ts       # Temperature data transformation (includes °C ↔ °F conversion)
-  formatDate.ts             # Locale-aware date formatting (pt-BR: "28 de Abril de 2026")
+  measurementsChart.ts      # Weight & temperature data transformation + °C ↔ °F conversion
+  formatDate.ts             # Locale-aware date formatting (formatDate, formatChartDate)
 ```
 
 ## Validation Rules

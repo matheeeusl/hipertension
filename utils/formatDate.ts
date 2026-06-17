@@ -14,3 +14,15 @@ export const formatDate = (date: Date | string, enFormat: string, locale: string
 
   return format(d, enFormat);
 };
+
+export const formatChartDate = (date: Date | string, locale?: string): string => {
+  const d = typeof date === "string" ? new Date(date) : date;
+
+  if (locale === "pt-BR") {
+    // e.g. "abr." → "Abr", "mai." → "Mai"
+    const raw = format(d, "MMM dd HH:mm", { locale: ptBR });
+    return raw.replace(/^([a-záàâãéèêíïóôõöúüç]+)\.?/, (_, m) => m.charAt(0).toUpperCase() + m.slice(1));
+  }
+
+  return format(d, "MMM dd HH:mm");
+};

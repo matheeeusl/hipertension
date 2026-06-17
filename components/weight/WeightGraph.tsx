@@ -10,7 +10,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { useWeight } from "@/hooks/useWeight";
-import { transformWeightData } from "@/utils/weightChart";
+import { transformWeightData } from "@/utils/measurementsChart";
 import { useLocale } from "@/contexts/LocaleContext";
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { ErrorAlert } from "@/components/shared/ErrorAlert";
