@@ -219,4 +219,17 @@ export const ptBR: Translations = {
     dashboard: "Painel",
     signOut: "Sair",
   },
+  export: {
+    button: "Exportar",
+    csv: "Exportar como CSV",
+    pdf: "Exportar como PDF",
+    exporting: "Exportando...",
+    pdfError: "Falha ao exportar PDF",
+    exportedOn: "Exportado em",
+    exportedOnDateFormat: "dd/MM/yyyy",
+    dataTable: "Tabela de Dados",
+    time: "Hora",
+    systolicMmhg: "Sistólica (mmHg)",
+    diastolicMmhg: "Diastólica (mmHg)",
+  },
 };

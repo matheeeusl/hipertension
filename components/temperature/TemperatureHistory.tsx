@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { createRoot } from "react-dom/client";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Temperature } from "@/interfaces/Temperature";
 import { useTemperature } from "@/hooks/useTemperature";
@@ -12,7 +13,16 @@ import { FilterButtonGroup } from "@/components/shared/FilterButtonGroup";
 import { SortableHead } from "@/components/shared/SortableHead";
 import { HistoryPagination } from "@/components/shared/HistoryPagination";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
+import { ExportMenu } from "@/components/shared/ExportMenu";
+import { OffscreenChart } from "@/components/shared/OffscreenChart";
 import { TemperatureTableRow } from "./TemperatureTableRow";
+import { FilterPeriod, getPeriodCutoff } from "@/utils/periodFilter";
+import {
+  exportTemperatureToCSV,
+  exportTemperatureToPDF,
+  captureChartImage,
+} from "@/utils/exportUtils";
+import { transformTemperatureData } from "@/utils/measurementsChart";
 
 type TempUnit = "C" | "F";
 
@@ -20,18 +30,6 @@ const PAGE_SIZE = 5;
 
 type SortColumn = "temperature" | "date";
 type SortDirection = "asc" | "desc";
-type FilterPeriod = "3days" | "1week" | "1month" | "3months" | "all";
-
-const getPeriodCutoff = (period: FilterPeriod): Date | null => {
-  if (period === "all") return null;
-  const cutoff = new Date();
-  cutoff.setHours(0, 0, 0, 0);
-  if (period === "3days") cutoff.setDate(cutoff.getDate() - 2);
-  if (period === "1week") cutoff.setDate(cutoff.getDate() - 7);
-  if (period === "1month") cutoff.setMonth(cutoff.getMonth() - 1);
-  if (period === "3months") cutoff.setMonth(cutoff.getMonth() - 3);
-  return cutoff;
-};
 
 export const TemperatureHistory = ({ userId }: { userId: string }) => {
   const { data, error, isLoading, deleteReading } = useTemperature(userId);
@@ -42,6 +40,7 @@ export const TemperatureHistory = ({ userId }: { userId: string }) => {
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [period, setPeriod] = useState<FilterPeriod>("all");
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => { setUnit(locale === "en" ? "F" : "C"); }, [locale]);
 
@@ -76,6 +75,32 @@ export const TemperatureHistory = ({ userId }: { userId: string }) => {
 
   const unitLabel = unit === "C" ? t.temperature.unitCelsius : t.temperature.unitFahrenheit;
 
+  const handleExportCSV = () => {
+    exportTemperatureToCSV(processedData, period, t);
+  };
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const chartData = transformTemperatureData(processedData);
+      const container = document.createElement("div");
+      container.style.cssText = "position:absolute;left:-9999px;top:-9999px;";
+      document.body.appendChild(container);
+      const root = createRoot(container);
+      root.render(<OffscreenChart type="temperature" chartData={chartData} unit={unit} />);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      const imageDataUrl = await captureChartImage(container);
+      root.unmount();
+      document.body.removeChild(container);
+      await exportTemperatureToPDF(processedData, period, imageDataUrl, unit, t);
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error("Failed to export PDF");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!pendingDeleteId) return;
     try {
@@ -97,6 +122,13 @@ export const TemperatureHistory = ({ userId }: { userId: string }) => {
         <h3 className="text-lg font-semibold">{t.temperature.historyTitle}</h3>
         <div className="flex flex-wrap items-center gap-3">
           <FilterButtonGroup options={filterOptions} selected={period} onSelect={(p) => { setPeriod(p); setPage(1); }} />
+          <ExportMenu
+            onExportCSV={handleExportCSV}
+            onExportPDF={handleExportPDF}
+            isExporting={isExporting}
+            disabled={processedData.length === 0}
+            labels={t.export}
+          />
           <div className="flex border rounded-md overflow-hidden">
             <button
               onClick={() => setUnit("C")}

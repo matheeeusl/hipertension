@@ -16,8 +16,7 @@ import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { ErrorAlert } from "@/components/shared/ErrorAlert";
 import { FilterButtonGroup } from "@/components/shared/FilterButtonGroup";
 import { WeightChartData } from "@/interfaces/Weight";
-
-type FilterPeriod = "3days" | "1week" | "1month" | "3months" | "all";
+import { FilterPeriod } from "@/utils/periodFilter";
 
 const chartConfig = {
   weight: {

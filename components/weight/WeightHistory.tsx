@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { createRoot } from "react-dom/client";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Weight } from "@/interfaces/Weight";
 import { useWeight } from "@/hooks/useWeight";
@@ -12,24 +13,21 @@ import { FilterButtonGroup } from "@/components/shared/FilterButtonGroup";
 import { SortableHead } from "@/components/shared/SortableHead";
 import { HistoryPagination } from "@/components/shared/HistoryPagination";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
+import { ExportMenu } from "@/components/shared/ExportMenu";
+import { OffscreenChart } from "@/components/shared/OffscreenChart";
 import { WeightTableRow } from "./WeightTableRow";
+import { FilterPeriod, getPeriodCutoff } from "@/utils/periodFilter";
+import {
+  exportWeightToCSV,
+  exportWeightToPDF,
+  captureChartImage,
+} from "@/utils/exportUtils";
+import { transformWeightData } from "@/utils/measurementsChart";
 
 const PAGE_SIZE = 5;
 
 type SortColumn = "weight" | "date";
 type SortDirection = "asc" | "desc";
-type FilterPeriod = "3days" | "1week" | "1month" | "3months" | "all";
-
-const getPeriodCutoff = (period: FilterPeriod): Date | null => {
-  if (period === "all") return null;
-  const cutoff = new Date();
-  cutoff.setHours(0, 0, 0, 0);
-  if (period === "3days") cutoff.setDate(cutoff.getDate() - 2);
-  if (period === "1week") cutoff.setDate(cutoff.getDate() - 7);
-  if (period === "1month") cutoff.setMonth(cutoff.getMonth() - 1);
-  if (period === "3months") cutoff.setMonth(cutoff.getMonth() - 3);
-  return cutoff;
-};
 
 export const WeightHistory = ({ userId }: { userId: string }) => {
   const { data, error, isLoading, deleteReading } = useWeight(userId);
@@ -39,6 +37,7 @@ export const WeightHistory = ({ userId }: { userId: string }) => {
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [period, setPeriod] = useState<FilterPeriod>("all");
+  const [isExporting, setIsExporting] = useState(false);
 
   const filterOptions = useMemo(
     () => (Object.entries(t.graph.filters) as [FilterPeriod, string][]).map(([value, label]) => ({ value, label })),
@@ -69,6 +68,32 @@ export const WeightHistory = ({ userId }: { userId: string }) => {
   const totalPages = useMemo(() => Math.max(1, Math.ceil(processedData.length / PAGE_SIZE)), [processedData.length]);
   const paginatedData = useMemo(() => processedData.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [processedData, page]);
 
+  const handleExportCSV = () => {
+    exportWeightToCSV(processedData, period, t);
+  };
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const chartData = transformWeightData(processedData);
+      const container = document.createElement("div");
+      container.style.cssText = "position:absolute;left:-9999px;top:-9999px;";
+      document.body.appendChild(container);
+      const root = createRoot(container);
+      root.render(<OffscreenChart type="weight" chartData={chartData} />);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      const imageDataUrl = await captureChartImage(container);
+      root.unmount();
+      document.body.removeChild(container);
+      await exportWeightToPDF(processedData, period, imageDataUrl, t);
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error("Failed to export PDF");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!pendingDeleteId) return;
     try {
@@ -94,6 +119,13 @@ export const WeightHistory = ({ userId }: { userId: string }) => {
             {processedData.length}{" "}
             {processedData.length !== 1 ? t.weight.readings : t.weight.reading}
           </span>
+          <ExportMenu
+            onExportCSV={handleExportCSV}
+            onExportPDF={handleExportPDF}
+            isExporting={isExporting}
+            disabled={processedData.length === 0}
+            labels={t.export}
+          />
         </div>
       </div>
 

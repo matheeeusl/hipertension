@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { createRoot } from "react-dom/client";
 import { ChevronsUpDown, ChevronUp, ChevronDown } from "lucide-react";
 import {
   Table,
@@ -30,23 +31,20 @@ import { ErrorAlert } from "@/components/shared/ErrorAlert";
 import { BPCitationFooter } from "@/components/shared/BPCitationFooter";
 import { ReadingTableRow } from "@/components/shared/ReadingTableRow";
 import { FilterButtonGroup } from "@/components/shared/FilterButtonGroup";
+import { ExportMenu } from "@/components/shared/ExportMenu";
+import { OffscreenChart } from "@/components/shared/OffscreenChart";
+import {
+  exportBPToCSV,
+  exportBPToPDF,
+  captureChartImage,
+} from "@/utils/exportUtils";
+import { transformBloodPressureData } from "@/utils/chart";
+import { FilterPeriod, getPeriodCutoff } from "@/utils/periodFilter";
 
 const PAGE_SIZE = 5;
 
 type SortColumn = "systolic" | "diastolic" | "category" | "date";
 type SortDirection = "asc" | "desc";
-type FilterPeriod = "3days" | "1week" | "1month" | "3months" | "all";
-
-const getPeriodCutoff = (period: FilterPeriod): Date | null => {
-  if (period === "all") return null;
-  const cutoff = new Date();
-  cutoff.setHours(0, 0, 0, 0);
-  if (period === "3days") cutoff.setDate(cutoff.getDate() - 2);
-  if (period === "1week") cutoff.setDate(cutoff.getDate() - 7);
-  if (period === "1month") cutoff.setMonth(cutoff.getMonth() - 1);
-  if (period === "3months") cutoff.setMonth(cutoff.getMonth() - 3);
-  return cutoff;
-};
 
 interface SortableHeadProps {
   column: SortColumn;
@@ -83,6 +81,7 @@ export const History = ({ userId }: { userId: string }) => {
   const [sortColumn, setSortColumn] = useState<SortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [period, setPeriod] = useState<FilterPeriod>("all");
+  const [isExporting, setIsExporting] = useState(false);
 
   const filterOptions = useMemo(
     () => (Object.entries(t.graph.filters) as [FilterPeriod, string][]).map(([value, label]) => ({ value, label })),
@@ -144,6 +143,32 @@ export const History = ({ userId }: { userId: string }) => {
     [processedData, page]
   );
 
+  const handleExportCSV = () => {
+    exportBPToCSV(processedData, period, t);
+  };
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const chartData = transformBloodPressureData(processedData);
+      const container = document.createElement("div");
+      container.style.cssText = "position:absolute;left:-9999px;top:-9999px;";
+      document.body.appendChild(container);
+      const root = createRoot(container);
+      root.render(<OffscreenChart type="bp" chartData={chartData} />);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      const imageDataUrl = await captureChartImage(container);
+      root.unmount();
+      document.body.removeChild(container);
+      await exportBPToPDF(processedData, period, imageDataUrl, t);
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error("Failed to export PDF");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!pendingDeleteId) return;
     try {
@@ -174,6 +199,13 @@ export const History = ({ userId }: { userId: string }) => {
             {processedData.length}{" "}
             {processedData.length !== 1 ? t.history.readings : t.history.reading}
           </span>
+          <ExportMenu
+            onExportCSV={handleExportCSV}
+            onExportPDF={handleExportPDF}
+            isExporting={isExporting}
+            disabled={processedData.length === 0}
+            labels={t.export}
+          />
         </div>
       </div>
 

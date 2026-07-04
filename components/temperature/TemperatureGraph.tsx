@@ -16,8 +16,7 @@ import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 import { ErrorAlert } from "@/components/shared/ErrorAlert";
 import { FilterButtonGroup } from "@/components/shared/FilterButtonGroup";
 import { TemperatureChartData } from "@/interfaces/Temperature";
-
-type FilterPeriod = "3days" | "1week" | "1month" | "3months" | "all";
+import { FilterPeriod } from "@/utils/periodFilter";
 type TempUnit = "C" | "F";
 
 const TEMP_COLOR = "rgb(249, 115, 22)";

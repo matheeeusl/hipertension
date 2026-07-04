@@ -215,6 +215,19 @@ export const en = {
     dashboard: "Dashboard",
     signOut: "Sign Out",
   },
+  export: {
+    button: "Export",
+    csv: "Export as CSV",
+    pdf: "Export as PDF",
+    exporting: "Exporting...",
+    pdfError: "Failed to export PDF",
+    exportedOn: "Exported on",
+    exportedOnDateFormat: "MMMM dd, yyyy",
+    dataTable: "Data Table",
+    time: "Time",
+    systolicMmhg: "Systolic (mmHg)",
+    diastolicMmhg: "Diastolic (mmHg)",
+  },
 };
 
 export type Translations = typeof en;

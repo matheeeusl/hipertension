@@ -14,8 +14,7 @@ import { ErrorAlert } from "@/components/shared/ErrorAlert";
 import { FilterButtonGroup } from "@/components/shared/FilterButtonGroup";
 import { MultiSeriesLineChart, MergedChartData } from "./MultiSeriesLineChart";
 import { ChartToggleButtons } from "./ChartToggleButtons";
-
-type FilterPeriod = "3days" | "1week" | "1month" | "3months" | "all";
+import { FilterPeriod } from "@/utils/periodFilter";
 
 const filterDataByPeriod = (data: MergedChartData[], period: FilterPeriod) => {
   if (period === "all" || data.length === 0) return data;
